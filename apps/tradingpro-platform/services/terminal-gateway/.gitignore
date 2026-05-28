@@ -1,0 +1,29 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+*.tsbuildinfo
+
+# Local env (secrets — never commit)
+.env
+.env.*
+!.env.example
+
+# Logs & runtime
+logs/
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Optional coverage / caches
+coverage/
+.nyc_output/

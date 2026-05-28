@@ -1,0 +1,15 @@
+{
+  "name": "backend-onboarding",
+  "$schema": "../../../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "apps/backend/src/modules/onboarding",
+  "projectType": "library",
+  "tags": ["type:lib", "scope:backend", "domain:onboarding", "layer:domain"],
+  "targets": {
+    "lint": {
+      "executor": "@nx/eslint:lint",
+      "options": {
+        "lintFilePatterns": ["apps/backend/src/modules/onboarding/**/*.ts"]
+      }
+    }
+  }
+}

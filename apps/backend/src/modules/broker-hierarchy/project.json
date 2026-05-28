@@ -1,0 +1,15 @@
+{
+  "name": "backend-broker-hierarchy",
+  "$schema": "../../../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "apps/backend/src/modules/broker-hierarchy",
+  "projectType": "library",
+  "tags": ["type:lib", "scope:backend", "domain:broker-hierarchy", "layer:domain"],
+  "targets": {
+    "lint": {
+      "executor": "@nx/eslint:lint",
+      "options": {
+        "lintFilePatterns": ["apps/backend/src/modules/broker-hierarchy/**/*.ts"]
+      }
+    }
+  }
+}

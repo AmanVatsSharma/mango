@@ -1,0 +1,62 @@
+/**
+ * File:        apps/tradingpro-platform/project.json
+ * Module:      Nx project configuration for TradingPro Platform
+ * Purpose:     Defines @nx/next executor targets for build, dev, serve, lint, test
+ *
+ * Author:      Mango Nx Workspace
+ * Last-updated: 2026-05-16
+ */
+
+{
+  "name": "tradingpro-platform",
+  "$schema": "../../nx.json",
+  "sourceRoot": "apps/tradingpro-platform",
+  "projectType": "application",
+  "tags": ["type:app", "scope:frontend", "layer:entrypoint"],
+  "targets": {
+    "dev": {
+      "executor": "@nx/next:dev",
+      "options": {
+        "port": 3000,
+        "keepPort": true
+      }
+    },
+    "build": {
+      "executor": "@nx/next:build",
+      "options": {
+        "filePath": "apps/tradingpro-platform/next.config.mjs",
+        "outputPath": "dist/apps/tradingpro-platform",
+        "keepPort": false
+      },
+      "outputs": ["{workspaceRoot}/.next"],
+      "dependsOn": ["^build"]
+    },
+    "serve": {
+      "executor": "@nx/next:serve",
+      "options": {
+        "port": 3000
+      }
+    },
+    "lint": {
+      "executor": "@nx/eslint:lint",
+      "options": {
+        "lintFilePatterns": ["apps/tradingpro-platform/**/*.ts", "apps/tradingpro-platform/**/*.tsx"]
+      }
+    },
+    "test": {
+      "executor": "@nx/jest:jest",
+      "outputs": ["{workspaceRoot}/coverage/apps/tradingpro-platform"],
+      "options": {
+        "jestConfig": "apps/tradingpro-platform/jest.config.cjs",
+        "passWithNoTests": true
+      }
+    },
+    "type-check": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "cd apps/tradingpro-platform && npx tsc --noEmit",
+        "cwd": "{workspaceRoot}"
+      }
+    }
+  }
+}

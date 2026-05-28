@@ -1,0 +1,85 @@
+<h2>What happens right after you place an order?</h2>
+<p class="subtitle">This is the highest-stakes moment in the flow. Right now it just shows a toast and closes. Which approach feels right?</p>
+
+<div class="options">
+  <div class="option" data-choice="confirm-screen" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Dedicated Confirmation Screen</h3>
+      <p>A full-screen overlay shows order details, live status (Pending → Executed), and P&L from fill price. User dismisses it manually. High confidence, high ceremony.</p>
+      <div class="mockup" style="margin-top:0.75rem">
+        <div class="mockup-header">After swipe → Order Placed</div>
+        <div class="mockup-body" style="background:#0a0a0a;padding:1.5rem;text-align:center;font-family:monospace">
+          <div style="font-size:2rem;margin-bottom:0.5rem">✅</div>
+          <div style="color:#22c55e;font-size:1.1rem;font-weight:700;margin-bottom:0.25rem">Order Submitted</div>
+          <div style="color:#888;font-size:0.8rem;margin-bottom:1rem">#ORD-4821A · BUY 10 RELIANCE</div>
+          <div style="display:flex;justify-content:space-between;margin-bottom:0.5rem;font-size:0.85rem">
+            <span style="color:#888">Status</span>
+            <span style="color:#f59e0b;animation:pulse 1s infinite">⏳ Pending…</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;margin-bottom:0.5rem;font-size:0.85rem">
+            <span style="color:#888">Price</span><span style="color:#fff">₹2,847.50</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;margin-bottom:1.5rem;font-size:0.85rem">
+            <span style="color:#888">Value</span><span style="color:#fff">₹28,475.00</span>
+          </div>
+          <div style="background:#1a1a2e;border-radius:8px;padding:0.5rem;color:#60a5fa;font-size:0.75rem">Waiting for exchange confirmation…</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="bottom-card" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Persistent Bottom Card</h3>
+      <p>A slim status card slides up from the bottom of the watchlist, showing live order state. Non-blocking — user can continue browsing while the order resolves. Kite-style.</p>
+      <div class="mockup" style="margin-top:0.75rem">
+        <div class="mockup-header">Back on Watchlist</div>
+        <div class="mockup-body" style="background:#0a0a0a;padding:0;font-family:monospace;position:relative;min-height:140px">
+          <div style="padding:0.75rem;color:#888;font-size:0.75rem">RELIANCE ₹2847 ▲0.4%</div>
+          <div style="padding:0.75rem;color:#888;font-size:0.75rem;border-top:1px solid #1a1a1a">TCS ₹3421 ▼0.2%</div>
+          <div style="position:absolute;bottom:0;left:0;right:0;background:#111827;border-top:2px solid #22c55e;padding:0.75rem;display:flex;align-items:center;justify-content:space-between">
+            <div>
+              <div style="color:#22c55e;font-size:0.75rem;font-weight:700">BUY 10 RELIANCE · ⏳ Pending</div>
+              <div style="color:#888;font-size:0.65rem">₹28,475 · #4821A</div>
+            </div>
+            <div style="color:#60a5fa;font-size:0.75rem">View ›</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="inline-toast" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>Rich Toast + Order Book Badge</h3>
+      <p>A richer toast with action buttons (View Order, Place Another). Order book tab shows a live badge for pending orders. Lightest disruption, fastest to dismiss.</p>
+      <div class="mockup" style="margin-top:0.75rem">
+        <div class="mockup-header">Toast at top</div>
+        <div class="mockup-body" style="background:#0a0a0a;padding:0.75rem;font-family:monospace">
+          <div style="background:#14532d;border:1px solid #22c55e;border-radius:10px;padding:0.75rem;margin-bottom:0.75rem">
+            <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.4rem">
+              <span style="color:#22c55e;font-weight:700;font-size:0.85rem">✓ Order Submitted</span>
+              <span style="color:#888;font-size:0.7rem;margin-left:auto">×</span>
+            </div>
+            <div style="color:#86efac;font-size:0.75rem;margin-bottom:0.5rem">BUY 10 RELIANCE @ ₹2,847.50</div>
+            <div style="display:flex;gap:0.5rem">
+              <div style="background:#166534;color:#bbf7d0;font-size:0.7rem;padding:0.25rem 0.6rem;border-radius:6px">View Order</div>
+              <div style="background:#1a1a1a;color:#888;font-size:0.7rem;padding:0.25rem 0.6rem;border-radius:6px">Place Another</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:0.5rem;font-size:0.7rem">
+            <div style="background:#1a1a1a;padding:0.35rem 0.75rem;border-radius:6px;color:#888">Watchlist</div>
+            <div style="background:#1a1a1a;padding:0.35rem 0.75rem;border-radius:6px;color:#888;position:relative">
+              Orders
+              <span style="position:absolute;top:-5px;right:-5px;background:#f59e0b;color:#000;font-size:0.6rem;width:14px;height:14px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700">1</span>
+            </div>
+            <div style="background:#1a1a1a;padding:0.35rem 0.75rem;border-radius:6px;color:#888">Positions</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,26 @@
+{
+  "$schema": "https://raw.githubusercontent.com/nrwl/nx/refs/heads/main/packages/nx/schemas/nx-schema.json",
+  "namedInputs": {
+    "default": ["{projectRoot}/**/*"],
+    "production": ["!{projectRoot}/**/*.spec.ts", "!{projectRoot}/**/test/**"]
+  },
+  "targetDefaults": {
+    "build": {
+      "cache": true,
+      "inputs": ["production", "^production"]
+    },
+    "test": {
+      "cache": true,
+      "inputs": ["default", "^production"]
+    },
+    "lint": {
+      "cache": true
+    },
+    "dev": {
+      "cache": false
+    },
+    "serve": {
+      "cache": false
+    }
+  }
+}

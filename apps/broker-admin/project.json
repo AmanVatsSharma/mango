@@ -1,0 +1,41 @@
+{
+  "name": "broker-admin",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "apps/broker-admin/src",
+  "projectType": "application",
+  "tags": ["type:app", "scope:web", "layer:entrypoint"],
+  "targets": {
+    "dev": {
+      "executor": "@nx/next:server",
+      "options": {
+        "dev": true,
+        "port": 4500,
+        "buildTarget": "broker-admin:build"
+      }
+    },
+    "build": {
+      "executor": "@nx/next:build",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "dist/apps/broker-admin"
+      }
+    },
+    "start": {
+      "executor": "@nx/next:server",
+      "options": {
+        "buildTarget": "broker-admin:build",
+        "port": 4500
+      }
+    },
+    "lint": {
+      "executor": "@nx/eslint:lint",
+      "options": {
+        "lintFilePatterns": [
+          "apps/broker-admin/src/**/*.{ts,tsx,js,jsx}",
+          "apps/broker-admin/*.config.{js,ts,mjs}",
+          "apps/broker-admin/next.config.{js,ts,mjs}"
+        ]
+      }
+    }
+  }
+}

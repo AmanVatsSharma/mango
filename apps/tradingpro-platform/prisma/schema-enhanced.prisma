@@ -1,0 +1,757 @@
+// // Enhanced Trading Platform Schema
+// // This schema includes all necessary models for comprehensive trading support
+
+// generator client {
+//   provider = "prisma-client-js"
+// }
+
+// generator pothos {
+//   provider     = "prisma-pothos-types"
+//   clientOutput = "./generated/client"
+//   output       = "../generated/pothos-types.ts"
+// }
+
+// generator pothosCrud {
+//   provider = "prisma-generator-pothos-codegen"
+//   output   = "../generated"
+//   inputs   = "../generated/inputs.ts"
+//   objects  = "../generated/objects.ts"
+//   autocrud = "../generated/autocrud.ts"
+// }
+
+// datasource db {
+//   provider  = "postgresql"
+//   url       = env("DATABASE_URL")
+//   directUrl = env("DIRECT_URL")
+// }
+
+// //////////////////////////
+// // Enhanced Enums
+// //////////////////////////
+
+// enum Role {
+//   USER
+//   ADMIN
+//   MODERATOR
+// }
+
+// enum KycStatus {
+//   PENDING
+//   APPROVED
+//   REJECTED
+// }
+
+// enum OrderType {
+//   MARKET
+//   LIMIT
+//   SL        // Stop Loss
+//   SLM       // Stop Loss Market
+// }
+
+// enum OrderSide {
+//   BUY
+//   SELL
+// }
+
+// enum OrderStatus {
+//   PENDING
+//   OPEN
+//   PARTIAL
+//   EXECUTED
+//   CANCELLED
+//   REJECTED
+//   EXPIRED
+// }
+
+// enum ProductType {
+//   INTRADAY
+//   DELIVERY
+//   FUTURES
+//   OPTIONS
+//   CURRENCY
+//   COMMODITY
+//   CRYPTO
+// }
+
+// enum InstrumentType {
+//   EQUITY
+//   INDEX
+//   FUTURE
+//   OPTION
+//   CURRENCY_PAIR
+//   COMMODITY
+//   CRYPTO
+// }
+
+// enum TransactionType {
+//   CREDIT
+//   DEBIT
+// }
+
+// enum TransactionCategory {
+//   TRADING
+//   DEPOSIT
+//   WITHDRAWAL
+//   CHARGES
+//   DIVIDEND
+//   INTEREST
+//   SETTLEMENT
+//   MARGIN
+//   PENALTY
+//   TAX
+//   OTHER
+// }
+
+// enum ChargeType {
+//   BROKERAGE
+//   STT
+//   EXCHANGE_FEE
+//   GST
+//   STAMP_DUTY
+//   SEBI_FEE
+//   CLEARING_FEE
+//   TDS
+//   OTHER
+// }
+
+// enum OptionType {
+//   CE
+//   PE
+// }
+
+// enum OrderValidity {
+//   DAY
+//   IOC   // Immediate or Cancel
+//   GTC   // Good Till Cancelled
+//   GTD   // Good Till Date
+// }
+
+// enum AuthEventType {
+//   REGISTRATION_ATTEMPT
+//   REGISTRATION_SUCCESS
+//   REGISTRATION_FAILED
+//   LOGIN_ATTEMPT
+//   LOGIN_SUCCESS
+//   LOGIN_FAILED
+//   OTP_SENT
+//   OTP_VERIFIED
+//   OTP_FAILED
+//   OTP_RESEND
+//   MPIN_SETUP_ATTEMPT
+//   MPIN_SETUP_SUCCESS
+//   MPIN_SETUP_FAILED
+//   MPIN_VERIFY_ATTEMPT
+//   MPIN_VERIFY_SUCCESS
+//   MPIN_VERIFY_FAILED
+//   MPIN_RESET_ATTEMPT
+//   MPIN_RESET_SUCCESS
+//   MPIN_RESET_FAILED
+//   SESSION_CREATED
+//   SESSION_EXPIRED
+//   SESSION_INVALIDATED
+//   PHONE_VERIFIED
+//   KYC_SUBMITTED
+//   KYC_APPROVED
+//   KYC_REJECTED
+//   SECURITY_VIOLATION
+//   RATE_LIMIT_EXCEEDED
+//   ACCOUNT_LOCKED
+//   ACCOUNT_UNLOCKED
+// }
+
+// enum AuthEventSeverity {
+//   LOW
+//   MEDIUM
+//   HIGH
+//   CRITICAL
+// }
+
+// enum LogLevel {
+//   INFO
+//   WARN
+//   ERROR
+//   DEBUG
+// }
+
+// enum LogCategory {
+//   ORDER
+//   POSITION
+//   TRANSACTION
+//   FUNDS
+//   AUTH
+//   SYSTEM
+//   API
+// }
+
+// enum OtpPurpose {
+//   LOGIN_VERIFICATION
+//   MPIN_SETUP
+//   MPIN_RESET
+//   PHONE_VERIFICATION
+//   TRANSACTION_AUTH
+// }
+
+// //////////////////////////
+// // Core Models
+// //////////////////////////
+
+// model Account {
+//   id                String  @id @default(cuid())
+//   userId            String  @map("user_id")
+//   type              String
+//   provider          String
+//   providerAccountId String  @map("provider_account_id")
+//   refresh_token     String?
+//   access_token      String?
+//   expires_at        Int?
+//   token_type        String?
+//   scope             String?
+//   id_token          String?
+//   session_state     String?
+//   user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+//   createdAt DateTime @default(now())
+//   updatedAt DateTime @updatedAt
+
+//   @@unique([provider, providerAccountId])
+// }
+
+// model Session {
+//   id           String   @id @default(cuid())
+//   sessionToken String   @unique
+//   userId       String
+//   expires      DateTime
+//   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+// }
+
+// model VerificationToken {
+//   identifier String   @id @default(cuid())
+//   email      String
+//   token      String   @unique
+//   expires    DateTime
+
+//   @@unique([identifier, token])
+// }
+
+// model User {
+//   id                 String               @id @default(uuid())
+//   name               String?
+//   email              String?              @unique
+//   emailVerified      DateTime?            @map("email_verified")
+//   password           String?
+//   image              String?
+//   phone              String?              @unique
+//   phoneVerified      DateTime?            @map("phone_verified")
+//   mPin               String?
+//   bio                String?
+//   role               Role                 @default(USER)
+//   isActive           Boolean              @default(true)
+//   kyc                KYC?
+//   tradingAccount     TradingAccount?
+//   accounts           Account[]
+//   sessions           Session[]
+//   createdAt          DateTime             @default(now())
+//   updatedAt          DateTime             @default(now()) @updatedAt
+//   clientId           String?              @unique @map("client_id")
+//   PasswordResetToken PasswordResetToken[]
+//   Watchlist          Watchlist[]
+//   OtpToken           OtpToken[]
+//   SessionAuth        SessionAuth[]
+//   AuthEvents         AuthEvent[]
+
+//   @@map("users")
+// }
+
+// model KYC {
+//   id            String    @id @default(uuid())
+//   userId        String    @unique
+//   user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+//   aadhaarNumber String
+//   panNumber     String
+//   bankProofUrl  String
+//   status        KycStatus @default(PENDING)
+//   submittedAt   DateTime  @default(now())
+//   approvedAt    DateTime?
+
+//   @@map("kyc")
+// }
+
+// //////////////////////////
+// // Asset & Instrument Models
+// //////////////////////////
+
+// model AssetClass {
+//   id           String       @id @default(uuid())
+//   name         String       @unique
+//   description  String?
+//   tradingHours Json?
+//   isActive     Boolean      @default(true)
+//   createdAt    DateTime     @default(now())
+//   updatedAt    DateTime     @updatedAt
+
+//   instruments  Instrument[]
+//   riskConfigs  RiskConfig[]
+
+//   @@map("asset_classes")
+// }
+
+// model Instrument {
+//   id            String      @id @default(uuid())
+//   assetClassId  String      @map("asset_class_id")
+//   instrumentId  String      @unique @map("instrument_id")
+//   symbol        String
+//   name          String
+//   exchange      String
+//   ticker        String
+//   instrumentType InstrumentType
+//   segment       String
+  
+//   // Pricing
+//   ltp           Float       @default(0)
+//   open          Float       @default(0)
+//   high          Float       @default(0)
+//   low           Float       @default(0)
+//   close         Float       @default(0)
+//   prevClose     Float       @default(0) @map("prev_close")
+//   volume        BigInt      @default(0)
+//   change        Float       @default(0)
+//   changePercent Float       @default(0) @map("change_percent")
+  
+//   // Contract specifications
+//   contractSize  Decimal?    @db.Decimal(10, 2) @map("contract_size")
+//   tickSize      Decimal?    @db.Decimal(10, 4) @map("tick_size")
+//   lotSize       Int?        @map("lot_size")
+//   multiplier    Decimal?    @db.Decimal(10, 2)
+  
+//   // F&O specific
+//   underlying    String?
+//   expiry        DateTime?
+//   strike        Decimal?    @db.Decimal(10, 2)
+//   optionType    OptionType?
+  
+//   // Forex/Crypto specific
+//   baseCurrency  String?     @map("base_currency")
+//   quoteCurrency String?     @map("quote_currency")
+//   pip           Decimal?    @db.Decimal(10, 6)
+  
+//   // Meta
+//   sector        String?
+//   isActive      Boolean     @default(true)
+//   isTradable    Boolean     @default(true)
+//   createdAt     DateTime    @default(now())
+//   updatedAt     DateTime    @updatedAt
+
+//   assetClass    AssetClass  @relation(fields: [assetClassId], references: [id])
+//   watchlistItems WatchlistItem[]
+//   orders        Order[]
+//   positions     Position[]
+
+//   @@index([symbol])
+//   @@index([assetClassId])
+//   @@index([instrumentType])
+//   @@index([exchange])
+//   @@map("instruments")
+// }
+
+// model RiskConfig {
+//   id                String      @id @default(uuid())
+//   assetClassId      String      @map("asset_class_id")
+//   productType       ProductType @map("product_type")
+  
+//   // Margin parameters
+//   initialMargin     Decimal     @db.Decimal(5, 2) @map("initial_margin")
+//   maintenanceMargin Decimal     @db.Decimal(5, 2) @map("maintenance_margin")
+//   leverage          Int         @default(1)
+  
+//   // Brokerage configuration
+//   brokerageType     String      @map("brokerage_type") // FLAT, PERCENTAGE, PER_LOT
+//   brokerageValue    Decimal     @db.Decimal(10, 4) @map("brokerage_value")
+//   maxBrokerage      Decimal?    @db.Decimal(10, 2) @map("max_brokerage")
+  
+//   // Tax rates (percentages)
+//   sttRate           Decimal?    @db.Decimal(5, 4) @map("stt_rate")
+//   gstRate           Decimal     @db.Decimal(5, 2) @default(18.0) @map("gst_rate")
+//   exchangeFeeRate   Decimal?    @db.Decimal(5, 4) @map("exchange_fee_rate")
+//   sebiRate          Decimal?    @db.Decimal(7, 6) @map("sebi_rate")
+//   stampDutyRate     Decimal?    @db.Decimal(5, 4) @map("stamp_duty_rate")
+  
+//   isActive          Boolean     @default(true)
+//   createdAt         DateTime    @default(now())
+//   updatedAt         DateTime    @updatedAt
+
+//   assetClass        AssetClass  @relation(fields: [assetClassId], references: [id])
+
+//   @@unique([assetClassId, productType])
+//   @@map("risk_configs")
+// }
+
+// //////////////////////////
+// // Trading Models
+// //////////////////////////
+
+// model TradingAccount {
+//   id              String   @id @default(uuid())
+//   userId          String   @unique
+//   user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+//   // Balance management
+//   balance         Decimal  @db.Decimal(18, 2) @default(0)
+//   blockedAmount   Decimal  @db.Decimal(18, 2) @default(0) @map("blocked_amount")
+//   availableMargin Decimal  @db.Decimal(18, 2) @default(0) @map("available_margin")
+//   usedMargin      Decimal  @db.Decimal(18, 2) @default(0) @map("used_margin")
+  
+//   // Margin breakdown
+//   spanMargin      Decimal  @db.Decimal(18, 2) @default(0) @map("span_margin")
+//   exposureMargin  Decimal  @db.Decimal(18, 2) @default(0) @map("exposure_margin")
+//   optionPremium   Decimal  @db.Decimal(18, 2) @default(0) @map("option_premium")
+  
+//   // P&L tracking
+//   realizedPnl     Decimal  @db.Decimal(18, 2) @default(0) @map("realized_pnl")
+//   unrealizedPnl   Decimal  @db.Decimal(18, 2) @default(0) @map("unrealized_pnl")
+  
+//   clientId        String?  @unique @map("client_id")
+//   version         Int      @default(0)
+//   createdAt       DateTime @default(now())
+//   updatedAt       DateTime @updatedAt
+
+//   orders          Order[]
+//   positions       Position[]
+//   transactions    Transaction[]
+
+//   @@map("trading_accounts")
+// }
+
+// model Order {
+//   id                String      @id @default(uuid())
+//   tradingAccountId  String      @map("trading_account_id")
+//   instrumentId      String?     @map("instrument_id")
+//   symbol            String
+  
+//   // Order details
+//   quantity          Int
+//   orderType         OrderType   @map("order_type")
+//   orderSide         OrderSide   @map("order_side")
+//   productType       ProductType @map("product_type")
+//   validity          OrderValidity @default(DAY)
+  
+//   // Pricing
+//   price             Decimal?    @db.Decimal(10, 2)
+//   triggerPrice      Decimal?    @db.Decimal(10, 2) @map("trigger_price")
+//   filledQuantity    Int         @default(0) @map("filled_quantity")
+//   pendingQuantity   Int         @default(0) @map("pending_quantity")
+//   cancelledQuantity Int         @default(0) @map("cancelled_quantity")
+//   averagePrice      Decimal?    @db.Decimal(10, 2) @map("average_price")
+  
+//   // Charges breakdown
+//   brokerage         Decimal     @db.Decimal(10, 2) @default(0)
+//   stt               Decimal     @db.Decimal(10, 2) @default(0)
+//   exchangeFees      Decimal     @db.Decimal(10, 2) @default(0) @map("exchange_fees")
+//   gst               Decimal     @db.Decimal(10, 2) @default(0)
+//   stampDuty         Decimal     @db.Decimal(10, 2) @default(0) @map("stamp_duty")
+//   sebiCharges       Decimal     @db.Decimal(10, 2) @default(0) @map("sebi_charges")
+//   totalCharges      Decimal     @db.Decimal(10, 2) @default(0) @map("total_charges")
+  
+//   // Margin details
+//   marginRequired    Decimal     @db.Decimal(10, 2) @default(0) @map("margin_required")
+//   marginBlocked     Decimal     @db.Decimal(10, 2) @default(0) @map("margin_blocked")
+//   leverageUsed      Int         @default(1) @map("leverage_used")
+  
+//   // Risk parameters
+//   stopLoss          Decimal?    @db.Decimal(10, 2) @map("stop_loss")
+//   takeProfit        Decimal?    @db.Decimal(10, 2) @map("take_profit")
+//   trailingStop      Boolean     @default(false) @map("trailing_stop")
+//   trailingStopValue Decimal?    @db.Decimal(10, 2) @map("trailing_stop_value")
+  
+//   // Status
+//   status            OrderStatus @default(PENDING)
+//   statusMessage     String?     @map("status_message")
+//   exchangeOrderId   String?     @map("exchange_order_id")
+//   exchangeTimestamp DateTime?   @map("exchange_timestamp")
+  
+//   // Parent-child orders (for bracket/cover orders)
+//   parentOrderId     String?     @map("parent_order_id")
+//   parentOrder       Order?      @relation("ParentChildOrders", fields: [parentOrderId], references: [id])
+//   childOrders       Order[]     @relation("ParentChildOrders")
+  
+//   // Audit
+//   ipAddress         String?     @map("ip_address")
+//   deviceId          String?     @map("device_id")
+//   remarks           String?
+//   createdBy         String?     @map("created_by")
+//   modifiedBy        String?     @map("modified_by")
+  
+//   createdAt         DateTime    @default(now())
+//   executedAt        DateTime?   @map("executed_at")
+//   updatedAt         DateTime    @updatedAt
+
+//   tradingAccount    TradingAccount @relation(fields: [tradingAccountId], references: [id], onDelete: Cascade)
+//   instrument        Instrument?    @relation(fields: [instrumentId], references: [id])
+//   Position          Position?      @relation(fields: [positionId], references: [id])
+//   positionId        String?
+//   charges           OrderCharges[]
+//   executions        OrderExecution[]
+
+//   @@index([tradingAccountId, status])
+//   @@index([symbol])
+//   @@index([createdAt])
+//   @@map("orders")
+// }
+
+// model OrderCharges {
+//   id          String     @id @default(uuid())
+//   orderId     String     @map("order_id")
+//   chargeType  ChargeType @map("charge_type")
+//   amount      Decimal    @db.Decimal(10, 2)
+//   rate        Decimal?   @db.Decimal(10, 4)
+//   description String?
+//   createdAt   DateTime   @default(now())
+
+//   order       Order      @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+//   @@map("order_charges")
+// }
+
+// model OrderExecution {
+//   id            String   @id @default(uuid())
+//   orderId       String   @map("order_id")
+//   executionTime DateTime @map("execution_time")
+//   quantity      Int
+//   price         Decimal  @db.Decimal(10, 2)
+//   exchangeRef   String?  @map("exchange_ref")
+//   createdAt     DateTime @default(now())
+
+//   order         Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+//   @@map("order_executions")
+// }
+
+// model Position {
+//   id               String   @id @default(uuid())
+//   tradingAccountId String   @map("trading_account_id")
+//   instrumentId     String?  @map("instrument_id")
+//   symbol           String
+//   productType      ProductType @map("product_type")
+  
+//   // Position details
+//   quantity         Int
+//   buyQuantity      Int      @default(0) @map("buy_quantity")
+//   sellQuantity     Int      @default(0) @map("sell_quantity")
+  
+//   // Pricing
+//   averagePrice     Decimal  @db.Decimal(10, 2) @map("average_price")
+//   buyAverage       Decimal  @db.Decimal(10, 2) @default(0) @map("buy_average")
+//   sellAverage      Decimal  @db.Decimal(10, 2) @default(0) @map("sell_average")
+  
+//   // P&L
+//   realizedPnL      Decimal  @default(0) @db.Decimal(18, 2) @map("realized_pnl")
+//   unrealizedPnL    Decimal  @default(0) @db.Decimal(18, 2) @map("unrealized_pnl")
+//   dayPnL           Decimal  @default(0) @db.Decimal(18, 2) @map("day_pnl")
+  
+//   // Charges for this position
+//   totalBrokerage   Decimal  @default(0) @db.Decimal(10, 2) @map("total_brokerage")
+//   totalTaxes       Decimal  @default(0) @db.Decimal(10, 2) @map("total_taxes")
+  
+//   // Risk management
+//   stopLoss         Decimal? @db.Decimal(10, 2) @map("stop_loss")
+//   target           Decimal? @db.Decimal(10, 2)
+  
+//   // Margin
+//   marginHeld       Decimal  @default(0) @db.Decimal(18, 2) @map("margin_held")
+  
+//   version          Int      @default(0)
+//   createdAt        DateTime @default(now())
+//   updatedAt        DateTime @updatedAt
+
+//   tradingAccount   TradingAccount @relation(fields: [tradingAccountId], references: [id], onDelete: Cascade)
+//   instrument       Instrument?    @relation(fields: [instrumentId], references: [id])
+//   orders           Order[]
+
+//   @@unique([tradingAccountId, symbol, productType])
+//   @@index([tradingAccountId])
+//   @@map("positions")
+// }
+
+// model Transaction {
+//   id               String              @id @default(uuid())
+//   tradingAccountId String              @map("trading_account_id")
+  
+//   // Transaction details
+//   amount           Decimal             @db.Decimal(18, 2)
+//   type             TransactionType
+//   category         TransactionCategory
+//   subCategory      String?             @map("sub_category")
+//   description      String?
+  
+//   // Reference tracking
+//   referenceType    String?             @map("reference_type")
+//   referenceId      String?             @map("reference_id")
+  
+//   // Balance tracking
+//   openingBalance   Decimal             @db.Decimal(18, 2) @map("opening_balance")
+//   closingBalance   Decimal             @db.Decimal(18, 2) @map("closing_balance")
+  
+//   // Settlement info
+//   settlementDate   DateTime?           @map("settlement_date")
+//   isSettled        Boolean             @default(false) @map("is_settled")
+  
+//   // Detailed breakdown
+//   baseAmount       Decimal             @db.Decimal(18, 2) @map("base_amount")
+//   charges          Decimal?            @db.Decimal(10, 2)
+//   taxes            Decimal?            @db.Decimal(10, 2)
+//   netAmount        Decimal             @db.Decimal(18, 2) @map("net_amount")
+  
+//   // Audit
+//   approvedBy       String?             @map("approved_by")
+//   approvedAt       DateTime?           @map("approved_at")
+//   remarks          String?
+  
+//   createdAt        DateTime            @default(now())
+
+//   tradingAccount   TradingAccount      @relation(fields: [tradingAccountId], references: [id], onDelete: Cascade)
+
+//   @@index([tradingAccountId, createdAt])
+//   @@index([category])
+//   @@index([settlementDate, isSettled])
+//   @@map("transactions")
+// }
+
+// //////////////////////////
+// // Supporting Models
+// //////////////////////////
+
+// model Watchlist {
+//   id          String   @id @default(uuid())
+//   userId      String
+//   name        String   @default("My Watchlist")
+//   description String?
+//   color       String?  @default("#3B82F6")
+//   isDefault   Boolean  @default(false)
+//   isPrivate   Boolean  @default(false)
+//   sortOrder   Int      @default(0)
+//   createdAt   DateTime @default(now())
+//   updatedAt   DateTime @updatedAt
+
+//   user  User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+//   items WatchlistItem[]
+
+//   @@unique([userId, name])
+//   @@index([userId, sortOrder])
+// }
+
+// model WatchlistItem {
+//   id          String   @id @default(cuid())
+//   watchlistId String
+//   instrumentId String  @map("instrument_id")
+//   notes       String?
+//   alertPrice  Decimal? @db.Decimal(10, 2)
+//   alertType   String?  @default("ABOVE")
+//   sortOrder   Int      @default(0)
+//   createdAt   DateTime @default(now())
+//   updatedAt   DateTime @updatedAt
+
+//   watchlist   Watchlist  @relation(fields: [watchlistId], references: [id], onDelete: Cascade)
+//   instrument  Instrument @relation(fields: [instrumentId], references: [id], onDelete: Cascade)
+
+//   @@unique([watchlistId, instrumentId])
+//   @@index([watchlistId, sortOrder])
+// }
+
+// model PasswordResetToken {
+//   id      String   @id @default(cuid())
+//   email   String
+//   token   String   @unique
+//   expires DateTime
+//   userId  String
+//   user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+//   @@unique([email, token])
+// }
+
+// model VortexSession {
+//   id          Int      @id @default(autoincrement())
+//   userId      Int
+//   accessToken String
+//   createdAt   DateTime @default(now())
+//   updatedAt   DateTime @updatedAt
+// }
+
+// model OtpToken {
+//   id        String     @id @default(uuid())
+//   userId    String
+//   phone     String
+//   otp       String
+//   purpose   OtpPurpose
+//   attempts  Int        @default(0)
+//   isUsed    Boolean    @default(false)
+//   expiresAt DateTime
+//   createdAt DateTime   @default(now())
+
+//   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+//   @@index([phone])
+//   @@index([purpose])
+//   @@index([expiresAt])
+//   @@map("otp_tokens")
+// }
+
+// model SessionAuth {
+//   id              String   @id @default(uuid())
+//   userId          String
+//   sessionToken    String   @unique
+//   isAuthenticated Boolean  @default(false)
+//   isMpinVerified  Boolean  @default(false)
+//   deviceId        String?
+//   ipAddress       String?
+//   userAgent       String?
+//   expiresAt       DateTime
+//   createdAt       DateTime @default(now())
+//   lastActivity    DateTime @default(now())
+
+//   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+//   @@index([userId])
+//   @@index([sessionToken])
+//   @@index([expiresAt])
+//   @@map("session_auth")
+// }
+
+// model AuthEvent {
+//   id        String            @id @default(uuid())
+//   userId    String?
+//   eventType AuthEventType
+//   severity  AuthEventSeverity
+//   message   String
+//   metadata  String?
+//   timestamp DateTime
+//   createdAt DateTime          @default(now())
+
+//   user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+//   @@index([userId])
+//   @@index([eventType])
+//   @@index([severity])
+//   @@index([timestamp])
+//   @@map("auth_events")
+// }
+
+// model TradingLog {
+//   id               String      @id @default(uuid())
+//   clientId         String      @map("client_id")
+//   userId           String?
+//   tradingAccountId String?     @map("trading_account_id")
+//   level            LogLevel    @default(INFO)
+//   category         LogCategory
+//   action           String
+//   message          String
+//   details          Json?
+//   metadata         Json?
+//   error            String?
+//   stackTrace       String?     @map("stack_trace")
+//   createdAt        DateTime    @default(now())
+
+//   @@index([clientId])
+//   @@index([category])
+//   @@index([level])
+//   @@index([createdAt])
+//   @@map("trading_logs")
+// }

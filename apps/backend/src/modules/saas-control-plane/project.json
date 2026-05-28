@@ -1,0 +1,15 @@
+{
+  "name": "backend-saas-control-plane",
+  "$schema": "../../../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "apps/backend/src/modules/saas-control-plane",
+  "projectType": "library",
+  "tags": ["type:lib", "scope:backend", "domain:saas-control-plane", "layer:domain"],
+  "targets": {
+    "lint": {
+      "executor": "@nx/eslint:lint",
+      "options": {
+        "lintFilePatterns": ["apps/backend/src/modules/saas-control-plane/**/*.ts"]
+      }
+    }
+  }
+}

@@ -1,0 +1,255 @@
+/**
+ * File:        components/admin-v2/admin-v2.css
+ * Module:      Admin v2 · Design Tokens & Aesthetic Layer
+ * Purpose:     Scoped design tokens + surfaces for the v2 admin shell.
+ *              All v2-only — wraps under [data-admin-v2-shell] so v1 (/admin-console/) is
+ *              untouched. Imported once from the v2 layout.
+ *
+ *              Implements Section 8.1 of the redesign plan:
+ *                - Deep-navy canvas with subtle mesh-gradient background.
+ *                - Brand palette: gain (electric green), loss (crimson), warn (amber),
+ *                  CTA (cobalt), info (sky), neutral (warm grey).
+ *                - Glass surfaces (backdrop-blur + thin border + inner ring).
+ *                - Reusable glow / lift utilities for hover states.
+ *                - Tabular slashed-zero numerals everywhere (.v2-num).
+ *                - prefers-reduced-motion respected on every animation.
+ *
+ * Side-effects: pure CSS; loaded by app/(admin-v2)/admin-v2/layout.tsx.
+ *
+ * Author:      BharatERP
+ * Last-updated: 2026-04-26
+ */
+
+[data-admin-v2-shell] {
+  /* ── Brand palette ───────────────────────────────────────────────────── */
+  --v2-bg-deep:        #07101F;  /* page canvas — deepest navy */
+  --v2-bg-elev-1:      #0B1424;  /* card background */
+  --v2-bg-elev-2:      #111A2E;  /* hover / active surface */
+  --v2-bg-glass:       rgba(17, 26, 46, 0.62);
+
+  --v2-border:         rgba(255, 255, 255, 0.06);
+  --v2-border-strong:  rgba(255, 255, 255, 0.12);
+  --v2-border-accent:  rgba(59, 130, 246, 0.40);
+
+  --v2-text:           #EAF1FF;
+  --v2-text-mute:      #9AA8C2;
+  --v2-text-faint:     #5A6A87;
+
+  --v2-gain:           #10E9A0;        /* electric mint — long / profit */
+  --v2-gain-soft:      rgba(16, 233, 160, 0.12);
+  --v2-loss:           #FF4D6B;        /* crimson — short / loss */
+  --v2-loss-soft:      rgba(255, 77, 107, 0.12);
+  --v2-warn:           #FFB020;
+  --v2-warn-soft:      rgba(255, 176, 32, 0.12);
+  --v2-info:           #5BC1FF;
+  --v2-info-soft:      rgba(91, 193, 255, 0.12);
+  --v2-cobalt:         #4D7CFE;        /* primary CTA */
+  --v2-cobalt-soft:    rgba(77, 124, 254, 0.14);
+  --v2-violet:         #8B6CFF;        /* accent — used in gradients */
+
+  /* ── Type system ─────────────────────────────────────────────────────── */
+  --v2-font-numeric:   "IBM Plex Mono", "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+
+  /* ── Surfaces ────────────────────────────────────────────────────────── */
+  --v2-card-bg:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.018) 0%, rgba(255, 255, 255, 0) 100%),
+    var(--v2-bg-elev-1);
+  --v2-card-shadow:
+    0 1px 0 0 rgba(255, 255, 255, 0.04) inset,
+    0 1px 2px 0 rgba(0, 0, 0, 0.45),
+    0 8px 24px -12px rgba(0, 0, 0, 0.55);
+  --v2-card-shadow-hover:
+    0 1px 0 0 rgba(255, 255, 255, 0.06) inset,
+    0 0 0 1px var(--v2-border-strong),
+    0 12px 36px -16px rgba(0, 0, 0, 0.7),
+    0 0 28px -10px rgba(77, 124, 254, 0.30);
+
+  --v2-glow-cobalt:    0 0 28px -8px rgba(77, 124, 254, 0.55);
+  --v2-glow-gain:      0 0 28px -8px rgba(16, 233, 160, 0.55);
+  --v2-glow-loss:      0 0 28px -8px rgba(255, 77, 107, 0.55);
+}
+
+/* ── Page canvas ───────────────────────────────────────────────────────── */
+[data-admin-v2-shell] {
+  background-color: var(--v2-bg-deep);
+  background-image:
+    /* aurora glows in the corners — large soft radial blobs */
+    radial-gradient(1200px 600px at -10% -10%, rgba(77, 124, 254, 0.18) 0%, rgba(77, 124, 254, 0) 60%),
+    radial-gradient(900px 500px at 110% 0%, rgba(139, 108, 255, 0.14) 0%, rgba(139, 108, 255, 0) 55%),
+    radial-gradient(1100px 600px at 50% 110%, rgba(16, 233, 160, 0.06) 0%, rgba(16, 233, 160, 0) 55%);
+  background-attachment: fixed;
+  color: var(--v2-text);
+  font-feature-settings: "ss01", "cv11";
+}
+
+/* ── Reusable atoms ────────────────────────────────────────────────────── */
+[data-admin-v2-shell] .v2-card {
+  background: var(--v2-card-bg);
+  border: 1px solid var(--v2-border);
+  border-radius: 14px;
+  box-shadow: var(--v2-card-shadow);
+  transition: transform 200ms cubic-bezier(0.2, 0.8, 0.2, 1),
+              box-shadow 200ms cubic-bezier(0.2, 0.8, 0.2, 1),
+              border-color 200ms ease;
+}
+[data-admin-v2-shell] .v2-card-hover:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--v2-card-shadow-hover);
+  border-color: var(--v2-border-strong);
+}
+
+[data-admin-v2-shell] .v2-glass {
+  background: var(--v2-bg-glass);
+  backdrop-filter: blur(14px) saturate(180%);
+  -webkit-backdrop-filter: blur(14px) saturate(180%);
+  border: 1px solid var(--v2-border);
+}
+
+[data-admin-v2-shell] .v2-num {
+  font-variant-numeric: tabular-nums slashed-zero;
+  font-feature-settings: "tnum", "zero", "ss01";
+}
+
+[data-admin-v2-shell] .v2-num-display {
+  font-family: var(--v2-font-numeric);
+  font-variant-numeric: tabular-nums slashed-zero;
+  letter-spacing: -0.02em;
+}
+
+/* Gradient text used for hero numbers + brand wordmark. */
+[data-admin-v2-shell] .v2-text-grad-primary {
+  background: linear-gradient(135deg, #EAF1FF 0%, #B8C7E8 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+[data-admin-v2-shell] .v2-text-grad-brand {
+  background: linear-gradient(135deg, #4D7CFE 0%, #8B6CFF 60%, #10E9A0 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+[data-admin-v2-shell] .v2-text-gain {
+  background: linear-gradient(135deg, #10E9A0 0%, #5BC1FF 120%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+[data-admin-v2-shell] .v2-text-loss {
+  background: linear-gradient(135deg, #FF4D6B 0%, #FF8AA0 120%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Subtle 1px gradient ring around an element (used by avatars, KPI accent). */
+[data-admin-v2-shell] .v2-ring-grad {
+  position: relative;
+  border-radius: inherit;
+}
+[data-admin-v2-shell] .v2-ring-grad::after {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(135deg, rgba(77, 124, 254, 0.6), rgba(139, 108, 255, 0.4) 50%, rgba(16, 233, 160, 0.5));
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+/* ── Pills ─────────────────────────────────────────────────────────────── */
+[data-admin-v2-shell] .v2-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.125rem 0.625rem;
+  border-radius: 9999px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  border: 1px solid;
+  background-clip: padding-box;
+}
+[data-admin-v2-shell] .v2-pill-success {
+  background: var(--v2-gain-soft);
+  border-color: rgba(16, 233, 160, 0.35);
+  color: #5DF7BC;
+  box-shadow: inset 0 0 0 1px rgba(16, 233, 160, 0.06);
+}
+[data-admin-v2-shell] .v2-pill-warning {
+  background: var(--v2-warn-soft);
+  border-color: rgba(255, 176, 32, 0.35);
+  color: #FFCB66;
+}
+[data-admin-v2-shell] .v2-pill-danger {
+  background: var(--v2-loss-soft);
+  border-color: rgba(255, 77, 107, 0.35);
+  color: #FF8AA0;
+}
+[data-admin-v2-shell] .v2-pill-info {
+  background: var(--v2-info-soft);
+  border-color: rgba(91, 193, 255, 0.35);
+  color: #8AD3FF;
+}
+[data-admin-v2-shell] .v2-pill-neutral {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.12);
+  color: var(--v2-text-mute);
+}
+
+/* Live dot — pulsing for SSE presence. */
+[data-admin-v2-shell] .v2-dot-live {
+  width: 0.4rem;
+  height: 0.4rem;
+  border-radius: 9999px;
+  background: var(--v2-gain);
+  box-shadow: 0 0 0 2px rgba(16, 233, 160, 0.18), 0 0 12px rgba(16, 233, 160, 0.7);
+  animation: v2-pulse 2.4s ease-in-out infinite;
+}
+@keyframes v2-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: 0.55; transform: scale(0.92); }
+}
+
+/* ── Buttons ───────────────────────────────────────────────────────────── */
+[data-admin-v2-shell] .v2-btn-cta {
+  background: linear-gradient(135deg, #4D7CFE 0%, #6E5BFF 100%);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow:
+    0 1px 0 0 rgba(255, 255, 255, 0.18) inset,
+    0 8px 20px -10px rgba(77, 124, 254, 0.7);
+  transition: transform 150ms ease, box-shadow 150ms ease;
+}
+[data-admin-v2-shell] .v2-btn-cta:hover {
+  transform: translateY(-1px);
+  box-shadow:
+    0 1px 0 0 rgba(255, 255, 255, 0.22) inset,
+    0 12px 28px -10px rgba(77, 124, 254, 0.85);
+}
+
+/* ── Density toggle ────────────────────────────────────────────────────── */
+[data-admin-v2-shell][data-v2-density="compact"] .v2-card { padding: 0.625rem; }
+[data-admin-v2-shell][data-v2-density="compact"] table { font-size: 0.78125rem; }
+[data-admin-v2-shell][data-v2-density="compact"] table td { padding-top: 0.375rem; padding-bottom: 0.375rem; }
+[data-admin-v2-shell][data-v2-density="comfortable"] .v2-card { padding: 1.125rem; }
+[data-admin-v2-shell][data-v2-density="comfortable"] table td { padding-top: 0.875rem; padding-bottom: 0.875rem; }
+
+/* ── Reduced motion ────────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  [data-admin-v2-shell] .v2-card,
+  [data-admin-v2-shell] .v2-card-hover:hover,
+  [data-admin-v2-shell] .v2-btn-cta,
+  [data-admin-v2-shell] .v2-btn-cta:hover,
+  [data-admin-v2-shell] .v2-dot-live {
+    transition: none;
+    animation: none;
+    transform: none;
+  }
+}

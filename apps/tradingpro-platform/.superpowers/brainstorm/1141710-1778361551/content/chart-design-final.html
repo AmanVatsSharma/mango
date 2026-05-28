@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Enterprise Chart Design</title>
+<script src="/helper.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #0a0a0f; color: #e2e8f0; font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif; padding: 24px; }
+  h1 { font-size: 18px; font-weight: 600; margin-bottom: 6px; }
+  .sub { color: #64748b; font-size: 13px; margin-bottom: 20px; }
+
+  .chart-container {
+    background: #0d1117;
+    border: 1px solid #1e293b;
+    border-radius: 12px;
+    overflow: hidden;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+  }
+
+  /* TOP BAR */
+  .top-bar {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    padding: 10px 14px;
+    background: #111827;
+    border-bottom: 1px solid #1e293b;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .symbol-block { display: flex; align-items: baseline; gap: 6px; }
+  .symbol { font-size: 15px; font-weight: 700; color: #f1f5f9; letter-spacing: 0.02em; }
+  .price { font-size: 17px; font-weight: 700; color: #22c55e; }
+  .change { font-size: 12px; color: #22c55e; background: rgba(34,197,94,0.12); padding: 2px 7px; border-radius: 5px; }
+  .divider { width: 1px; height: 18px; background: #1e293b; margin: 0 4px; }
+
+  /* TF PILLS */
+  .tf-group { display: flex; gap: 3px; }
+  .tf { padding: 3px 9px; border-radius: 5px; font-size: 11px; font-weight: 600; cursor: pointer; border: none; background: transparent; color: #64748b; letter-spacing: 0.03em; }
+  .tf.active { background: #1d4ed8; color: #fff; }
+  .tf:hover:not(.active) { background: #1e293b; color: #94a3b8; }
+
+  /* CHART TYPE */
+  .type-btn { padding: 3px 9px; border-radius: 5px; font-size: 11px; font-weight: 600; cursor: pointer; border: 1px solid #1e293b; background: transparent; color: #64748b; display: flex; align-items: center; gap: 4px; }
+  .type-btn.active { border-color: #334155; color: #94a3b8; }
+
+  /* RIGHT ACTIONS */
+  .actions { margin-left: auto; display: flex; gap: 6px; align-items: center; }
+  .action-btn { padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: 600; cursor: pointer; border: 1px solid #1e293b; background: transparent; color: #64748b; display: flex; align-items: center; gap: 4px; white-space: nowrap; }
+  .action-btn:hover { background: #1e293b; color: #94a3b8; }
+  .action-btn.active { background: #1e3a5f; border-color: #2563eb; color: #60a5fa; }
+
+  /* INDICATOR BAR */
+  .indicator-bar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 14px;
+    background: #0d1117;
+    border-bottom: 1px solid #1e293b;
+    flex-wrap: wrap;
+  }
+  .ind-label { font-size: 10px; color: #475569; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; margin-right: 2px; }
+  .ind-pill { padding: 2px 9px; border-radius: 4px; font-size: 10px; font-weight: 600; cursor: pointer; border: 1px solid transparent; display: flex; align-items: center; gap: 4px; }
+  .ind-pill.on  { background: rgba(255,255,255,0.06); border-color: #334155; }
+  .ind-pill .dot { width: 7px; height: 7px; border-radius: 50%; }
+  .ind-pill .x  { color: #475569; font-size: 10px; margin-left: 2px; }
+  .add-btn { padding: 2px 9px; border-radius: 4px; font-size: 10px; font-weight: 600; cursor: pointer; border: 1px dashed #334155; background: transparent; color: #475569; }
+  .add-btn:hover { border-color: #3b82f6; color: #60a5fa; }
+
+  /* DRAWING TOOL BAR */
+  .draw-bar {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 14px;
+    background: #0d1117;
+    border-bottom: 1px solid #1e293b;
+  }
+  .draw-label { font-size: 10px; color: #475569; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; margin-right: 4px; }
+  .draw-btn { padding: 3px 10px; border-radius: 5px; font-size: 11px; cursor: pointer; border: 1px solid #1e293b; background: transparent; color: #64748b; display: flex; align-items: center; gap: 5px; }
+  .draw-btn:hover { background: #1e293b; color: #94a3b8; }
+  .draw-btn.active { background: #1e3a5f; border-color: #2563eb; color: #60a5fa; }
+  .draw-sep { width: 1px; height: 14px; background: #1e293b; margin: 0 4px; }
+
+  /* OHLCV STRIP */
+  .ohlcv-strip {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 5px 14px;
+    background: rgba(0,0,0,0.3);
+    border-bottom: 1px solid #1e293b;
+    font-size: 11px;
+    flex-wrap: wrap;
+  }
+  .ohlcv-item { display: flex; align-items: center; gap: 4px; }
+  .ohlcv-key { color: #475569; }
+  .ohlcv-val { color: #94a3b8; font-weight: 600; }
+  .ohlcv-vol { color: #6366f1; }
+
+  /* MAIN CHART AREA */
+  .main-pane {
+    position: relative;
+    height: 240px;
+    background: #0d1117;
+    overflow: hidden;
+  }
+
+  /* Fake price scale */
+  .price-scale {
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 64px;
+    background: #0d1117;
+    border-left: 1px solid #1e293b;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 8px 6px;
+  }
+  .price-tick { font-size: 9px; color: #475569; text-align: right; }
+  .price-tick.current { color: #22c55e; font-weight: 700; background: rgba(34,197,94,0.15); padding: 1px 4px; border-radius: 3px; margin-right: -4px; }
+
+  /* Fake chart SVG */
+  .chart-svg { position: absolute; left: 0; top: 0; right: 64px; bottom: 0; }
+
+  /* RSI PANE */
+  .rsi-pane {
+    height: 80px;
+    background: #0d1117;
+    border-top: 1px solid #1e293b;
+    position: relative;
+    overflow: hidden;
+  }
+  .rsi-label { position: absolute; top: 4px; left: 10px; font-size: 9px; color: #475569; font-weight: 600; }
+  .rsi-label span { color: #3b82f6; }
+  .rsi-70 { position: absolute; right: 68px; top: 12px; font-size: 8px; color: #ef4444; opacity: 0.6; }
+  .rsi-30 { position: absolute; right: 68px; bottom: 14px; font-size: 8px; color: #22c55e; opacity: 0.6; }
+  .rsi-scale { position: absolute; right: 0; top: 0; bottom: 0; width: 64px; background: #0d1117; border-left: 1px solid #1e293b; display: flex; flex-direction: column; justify-content: space-between; padding: 6px 6px; }
+
+  /* Volume pane */
+  .vol-label { position: absolute; top: 4px; left: 10px; font-size: 9px; color: #475569; font-weight: 600; }
+
+  /* Time axis */
+  .time-axis {
+    height: 22px;
+    background: #0d1117;
+    border-top: 1px solid #1e293b;
+    display: flex;
+    align-items: center;
+    padding: 0 0 0 10px;
+    gap: 0;
+  }
+  .time-tick { font-size: 9px; color: #475569; }
+
+  /* Legend overlay inside chart */
+  .legend-overlay {
+    position: absolute;
+    top: 8px;
+    left: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    z-index: 10;
+  }
+  .legend-item { display: flex; align-items: center; gap: 5px; font-size: 9px; background: rgba(13,17,23,0.8); padding: 2px 6px; border-radius: 4px; }
+  .legend-color { width: 14px; height: 2px; border-radius: 1px; }
+
+  /* Approve section */
+  .approve-section { margin-top: 20px; }
+  .options { display: flex; flex-direction: column; gap: 10px; }
+  .option { display: flex; align-items: flex-start; gap: 14px; padding: 14px 18px; border: 1px solid #1e293b; border-radius: 10px; cursor: pointer; transition: all 0.15s; background: #0d1117; }
+  .option:hover { border-color: #334155; background: #111827; }
+  .option.selected { border-color: #2563eb; background: #0f1f3d; }
+  .letter { width: 28px; height: 28px; border-radius: 6px; background: #1e293b; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; color: #94a3b8; flex-shrink: 0; }
+  .option.selected .letter { background: #1d4ed8; color: #fff; }
+  .content h3 { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+  .content p { font-size: 12px; color: #64748b; line-height: 1.5; }
+</style>
+</head>
+<body>
+
+<h1>Enterprise Trading Chart — Final Design Preview</h1>
+<p class="sub">This is what the upgraded chart will look like. Review the layout and click approve below.</p>
+
+<!-- CHART MOCKUP -->
+<div class="chart-container">
+
+  <!-- TOP BAR: Symbol + Price + Timeframes + Chart Type + Actions -->
+  <div class="top-bar">
+    <div class="symbol-block">
+      <span class="symbol">NIFTY 50</span>
+      <span class="price">22,347.65</span>
+      <span class="change">+0.84%</span>
+    </div>
+    <div class="divider"></div>
+    <div class="tf-group">
+      <button class="tf">1m</button>
+      <button class="tf">3m</button>
+      <button class="tf">5m</button>
+      <button class="tf active">15m</button>
+      <button class="tf">30m</button>
+      <button class="tf">1H</button>
+      <button class="tf">4H</button>
+      <button class="tf">1D</button>
+      <button class="tf">1W</button>
+    </div>
+    <div class="divider"></div>
+    <button class="type-btn active">🕯 Candle ▾</button>
+    <div class="actions">
+      <button class="action-btn">↺ Reset</button>
+      <button class="action-btn">⛶ Fullscreen</button>
+    </div>
+  </div>
+
+  <!-- INDICATOR CONTROL BAR -->
+  <div class="indicator-bar">
+    <span class="ind-label">Indicators</span>
+    <div class="ind-pill on">
+      <div class="dot" style="background:#f59e0b"></div>
+      <span style="color:#f59e0b">MA(9)</span>
+      <span class="x">✕</span>
+    </div>
+    <div class="ind-pill on">
+      <div class="dot" style="background:#a78bfa"></div>
+      <span style="color:#a78bfa">MA(20)</span>
+      <span class="x">✕</span>
+    </div>
+    <div class="ind-pill on">
+      <div class="dot" style="background:#34d399"></div>
+      <span style="color:#34d399">EMA(21)</span>
+      <span class="x">✕</span>
+    </div>
+    <div class="ind-pill on">
+      <div class="dot" style="background:#3b82f6"></div>
+      <span style="color:#3b82f6">RSI(14)</span>
+      <span class="x">✕</span>
+    </div>
+    <button class="add-btn">＋ Add</button>
+  </div>
+
+  <!-- DRAWING TOOL BAR -->
+  <div class="draw-bar">
+    <span class="draw-label">Draw</span>
+    <button class="draw-btn active">↗ Trend Line</button>
+    <button class="draw-btn">— Horizontal Level</button>
+    <div class="draw-sep"></div>
+    <button class="draw-btn" style="color:#ef4444;border-color:#3f1111">✕ Clear All</button>
+    <span style="font-size:10px;color:#334155;margin-left:6px;">Click chart to place · Right-click to delete</span>
+  </div>
+
+  <!-- OHLCV STRIP -->
+  <div class="ohlcv-strip">
+    <div class="ohlcv-item"><span class="ohlcv-key">O</span><span class="ohlcv-val">22,289.40</span></div>
+    <div class="ohlcv-item"><span class="ohlcv-key">H</span><span class="ohlcv-val" style="color:#22c55e">22,398.10</span></div>
+    <div class="ohlcv-item"><span class="ohlcv-key">L</span><span class="ohlcv-val" style="color:#ef4444">22,261.75</span></div>
+    <div class="ohlcv-item"><span class="ohlcv-key">C</span><span class="ohlcv-val">22,347.65</span></div>
+    <div class="ohlcv-item"><span class="ohlcv-key">V</span><span class="ohlcv-val ohlcv-vol">18.4M</span></div>
+  </div>
+
+  <!-- MAIN CHART PANE (candles + MA/EMA + trend line) -->
+  <div class="main-pane">
+    <svg class="chart-svg" viewBox="0 0 600 240" preserveAspectRatio="none">
+      <!-- Grid lines -->
+      <line x1="0" y1="60" x2="600" y2="60" stroke="#1e293b" stroke-width="0.5"/>
+      <line x1="0" y1="120" x2="600" y2="120" stroke="#1e293b" stroke-width="0.5"/>
+      <line x1="0" y1="180" x2="600" y2="180" stroke="#1e293b" stroke-width="0.5"/>
+      <line x1="100" y1="0" x2="100" y2="240" stroke="#1e293b" stroke-width="0.5"/>
+      <line x1="200" y1="0" x2="200" y2="240" stroke="#1e293b" stroke-width="0.5"/>
+      <line x1="300" y1="0" x2="300" y2="240" stroke="#1e293b" stroke-width="0.5"/>
+      <line x1="400" y1="0" x2="400" y2="240" stroke="#1e293b" stroke-width="0.5"/>
+      <line x1="500" y1="0" x2="500" y2="240" stroke="#1e293b" stroke-width="0.5"/>
+
+      <!-- MA(9) line - amber -->
+      <polyline points="30,165 60,150 90,142 120,130 150,118 180,125 210,110 240,98 270,108 300,95 330,88 360,80 390,88 420,75 450,70 480,65 510,60 540,68 570,62" fill="none" stroke="#f59e0b" stroke-width="1.5" opacity="0.85"/>
+
+      <!-- MA(20) line - violet -->
+      <polyline points="30,175 60,165 90,155 120,145 150,135 180,140 210,125 240,115 270,120 300,108 330,100 360,92 390,98 420,85 450,80 480,75 510,70 540,76 570,70" fill="none" stroke="#a78bfa" stroke-width="1.5" opacity="0.85"/>
+
+      <!-- EMA(21) - emerald -->
+      <polyline points="30,180 60,168 90,158 120,148 150,138 180,143 210,128 240,118 270,124 300,111 330,103 360,95 390,101 420,88 450,83 480,78 510,73 540,79 570,73" fill="none" stroke="#34d399" stroke-width="1.5" opacity="0.85"/>
+
+      <!-- User-drawn trend line -->
+      <line x1="60" y1="180" x2="540" y2="55" stroke="#fbbf24" stroke-width="1.5" stroke-dasharray="5,3" opacity="0.7"/>
+      <circle cx="60" cy="180" r="3" fill="#fbbf24" opacity="0.8"/>
+      <circle cx="540" cy="55" r="3" fill="#fbbf24" opacity="0.8"/>
+
+      <!-- Horizontal level -->
+      <line x1="0" y1="95" x2="600" y2="95" stroke="#3b82f6" stroke-width="1" stroke-dasharray="3,4" opacity="0.6"/>
+      <text x="8" y="91" fill="#3b82f6" font-size="8" opacity="0.8">22,310</text>
+
+      <!-- Candles — realistic mix -->
+      <g>
+        <!-- Bull candles (green) -->
+        <line x1="18" y1="168" x2="18" y2="185" stroke="#22c55e" stroke-width="1.2"/><rect x="14" y="168" width="8" height="14" fill="#22c55e" rx="1"/>
+        <line x1="36" y1="152" x2="36" y2="168" stroke="#22c55e" stroke-width="1.2"/><rect x="32" y="152" width="8" height="13" fill="#22c55e" rx="1"/>
+        <line x1="72" y1="138" x2="72" y2="152" stroke="#22c55e" stroke-width="1.2"/><rect x="68" y="138" width="8" height="12" fill="#22c55e" rx="1"/>
+        <line x1="108" y1="128" x2="108" y2="142" stroke="#22c55e" stroke-width="1.2"/><rect x="104" y="128" width="8" height="12" fill="#22c55e" rx="1"/>
+        <line x1="144" y1="112" x2="144" y2="128" stroke="#22c55e" stroke-width="1.2"/><rect x="140" y="112" width="8" height="14" fill="#22c55e" rx="1"/>
+        <line x1="198" y1="102" x2="198" y2="118" stroke="#22c55e" stroke-width="1.2"/><rect x="194" y="102" width="8" height="14" fill="#22c55e" rx="1"/>
+        <line x1="234" y1="90" x2="234" y2="105" stroke="#22c55e" stroke-width="1.2"/><rect x="230" y="90" width="8" height="13" fill="#22c55e" rx="1"/>
+        <line x1="288" y1="88" x2="288" y2="102" stroke="#22c55e" stroke-width="1.2"/><rect x="284" y="88" width="8" height="12" fill="#22c55e" rx="1"/>
+        <line x1="324" y1="80" x2="324" y2="94" stroke="#22c55e" stroke-width="1.2"/><rect x="320" y="80" width="8" height="12" fill="#22c55e" rx="1"/>
+        <line x1="360" y1="72" x2="360" y2="88" stroke="#22c55e" stroke-width="1.2"/><rect x="356" y="72" width="8" height="14" fill="#22c55e" rx="1"/>
+        <line x1="414" y1="68" x2="414" y2="82" stroke="#22c55e" stroke-width="1.2"/><rect x="410" y="68" width="8" height="12" fill="#22c55e" rx="1"/>
+        <line x1="468" y1="58" x2="468" y2="72" stroke="#22c55e" stroke-width="1.2"/><rect x="464" y="58" width="8" height="12" fill="#22c55e" rx="1"/>
+        <line x1="540" y1="55" x2="540" y2="70" stroke="#22c55e" stroke-width="1.2"/><rect x="536" y="55" width="8" height="13" fill="#22c55e" rx="1"/>
+        <!-- Bear candles (red) -->
+        <line x1="54" y1="150" x2="54" y2="165" stroke="#ef4444" stroke-width="1.2"/><rect x="50" y="150" width="8" height="13" fill="#ef4444" rx="1"/>
+        <line x1="90" y1="130" x2="90" y2="148" stroke="#ef4444" stroke-width="1.2"/><rect x="86" y="130" width="8" height="16" fill="#ef4444" rx="1"/>
+        <line x1="126" y1="122" x2="126" y2="138" stroke="#ef4444" stroke-width="1.2"/><rect x="122" y="122" width="8" height="14" fill="#ef4444" rx="1"/>
+        <line x1="162" y1="115" x2="162" y2="130" stroke="#ef4444" stroke-width="1.2"/><rect x="158" y="115" width="8" height="13" fill="#ef4444" rx="1"/>
+        <line x1="180" y1="120" x2="180" y2="136" stroke="#ef4444" stroke-width="1.2"/><rect x="176" y="120" width="8" height="14" fill="#ef4444" rx="1"/>
+        <line x1="216" y1="104" x2="216" y2="118" stroke="#ef4444" stroke-width="1.2"/><rect x="212" y="104" width="8" height="12" fill="#ef4444" rx="1"/>
+        <line x1="252" y1="96" x2="252" y2="110" stroke="#ef4444" stroke-width="1.2"/><rect x="248" y="96" width="8" height="12" fill="#ef4444" rx="1"/>
+        <line x1="270" y1="100" x2="270" y2="115" stroke="#ef4444" stroke-width="1.2"/><rect x="266" y="100" width="8" height="13" fill="#ef4444" rx="1"/>
+        <line x1="306" y1="90" x2="306" y2="105" stroke="#ef4444" stroke-width="1.2"/><rect x="302" y="90" width="8" height="13" fill="#ef4444" rx="1"/>
+        <line x1="342" y1="80" x2="342" y2="96" stroke="#ef4444" stroke-width="1.2"/><rect x="338" y="80" width="8" height="14" fill="#ef4444" rx="1"/>
+        <line x1="378" y1="82" x2="378" y2="98" stroke="#ef4444" stroke-width="1.2"/><rect x="374" y="82" width="8" height="14" fill="#ef4444" rx="1"/>
+        <line x1="396" y1="84" x2="396" y2="98" stroke="#ef4444" stroke-width="1.2"/><rect x="392" y="84" width="8" height="12" fill="#ef4444" rx="1"/>
+        <line x1="432" y1="72" x2="432" y2="86" stroke="#ef4444" stroke-width="1.2"/><rect x="428" y="72" width="8" height="12" fill="#ef4444" rx="1"/>
+        <line x1="450" y1="76" x2="450" y2="90" stroke="#ef4444" stroke-width="1.2"/><rect x="446" y="76" width="8" height="12" fill="#ef4444" rx="1"/>
+        <line x1="486" y1="62" x2="486" y2="76" stroke="#ef4444" stroke-width="1.2"/><rect x="482" y="62" width="8" height="12" fill="#ef4444" rx="1"/>
+        <line x1="504" y1="65" x2="504" y2="80" stroke="#ef4444" stroke-width="1.2"/><rect x="500" y="65" width="8" height="13" fill="#ef4444" rx="1"/>
+        <line x1="522" y1="62" x2="522" y2="76" stroke="#ef4444" stroke-width="1.2"/><rect x="518" y="62" width="8" height="12" fill="#ef4444" rx="1"/>
+        <line x1="558" y1="60" x2="558" y2="74" stroke="#ef4444" stroke-width="1.2"/><rect x="554" y="60" width="8" height="12" fill="#ef4444" rx="1"/>
+        <line x1="576" y1="64" x2="576" y2="78" stroke="#ef4444" stroke-width="1.2"/><rect x="572" y="64" width="8" height="12" fill="#ef4444" rx="1"/>
+      </g>
+
+      <!-- Volume at the bottom (subtle) -->
+      <rect x="14" y="210" width="8" height="20" fill="#22c55e" opacity="0.3" rx="1"/>
+      <rect x="32" y="215" width="8" height="15" fill="#22c55e" opacity="0.3" rx="1"/>
+      <rect x="50" y="205" width="8" height="25" fill="#ef4444" opacity="0.3" rx="1"/>
+      <rect x="68" y="212" width="8" height="18" fill="#22c55e" opacity="0.3" rx="1"/>
+      <rect x="86" y="208" width="8" height="22" fill="#ef4444" opacity="0.3" rx="1"/>
+    </svg>
+
+    <!-- Legend overlay -->
+    <div class="legend-overlay">
+      <div class="legend-item"><div class="legend-color" style="background:#f59e0b"></div><span style="color:#f59e0b;font-size:9px;">MA(9) 22,298</span></div>
+      <div class="legend-item"><div class="legend-color" style="background:#a78bfa"></div><span style="color:#a78bfa;font-size:9px;">MA(20) 22,251</span></div>
+      <div class="legend-item"><div class="legend-color" style="background:#34d399"></div><span style="color:#34d399;font-size:9px;">EMA(21) 22,245</span></div>
+    </div>
+
+    <!-- Price scale -->
+    <div class="price-scale">
+      <div class="price-tick">22,420</div>
+      <div class="price-tick">22,390</div>
+      <div class="price-tick">22,360</div>
+      <div class="price-tick current">22,347</div>
+      <div class="price-tick">22,300</div>
+      <div class="price-tick">22,260</div>
+    </div>
+  </div>
+
+  <!-- RSI SUB-PANE -->
+  <div class="rsi-pane">
+    <div class="rsi-label">RSI(14) <span>58.3</span></div>
+    <div class="rsi-70">70</div>
+    <div class="rsi-30">30</div>
+    <svg style="position:absolute;left:0;top:0;right:64px;bottom:0;width:calc(100% - 64px);height:100%" viewBox="0 0 536 80" preserveAspectRatio="none">
+      <!-- OB/OS zones -->
+      <rect x="0" y="0" width="536" height="16" fill="#ef4444" opacity="0.04"/>
+      <rect x="0" y="64" width="536" height="16" fill="#22c55e" opacity="0.04"/>
+      <line x1="0" y1="16" x2="536" y2="16" stroke="#ef4444" stroke-width="0.5" stroke-dasharray="3,4" opacity="0.4"/>
+      <line x1="0" y1="64" x2="536" y2="64" stroke="#22c55e" stroke-width="0.5" stroke-dasharray="3,4" opacity="0.4"/>
+      <!-- Midline -->
+      <line x1="0" y1="40" x2="536" y2="40" stroke="#334155" stroke-width="0.5"/>
+      <!-- RSI curve -->
+      <polyline points="0,42 30,38 60,35 90,32 120,30 150,34 180,38 210,28 240,22 270,30 300,20 330,15 360,22 390,28 420,18 450,15 480,12 510,18 536,20" fill="none" stroke="#3b82f6" stroke-width="1.8" opacity="0.9"/>
+    </svg>
+    <div class="rsi-scale">
+      <div class="price-tick" style="color:#ef4444;opacity:0.6">70</div>
+      <div class="price-tick">50</div>
+      <div class="price-tick" style="color:#22c55e;opacity:0.6">30</div>
+    </div>
+  </div>
+
+  <!-- TIME AXIS -->
+  <div class="time-axis">
+    <span style="flex:1;font-size:9px;color:#334155">09:15</span>
+    <span style="flex:1;font-size:9px;color:#334155">10:00</span>
+    <span style="flex:1;font-size:9px;color:#334155">11:00</span>
+    <span style="flex:1;font-size:9px;color:#334155">12:00</span>
+    <span style="flex:1;font-size:9px;color:#334155">13:00</span>
+    <span style="flex:1;font-size:9px;color:#334155">14:00</span>
+    <span style="flex:1;font-size:9px;color:#334155">15:30</span>
+    <span style="width:64px"></span>
+  </div>
+
+</div>
+
+<!-- APPROVE -->
+<div class="approve-section">
+  <p style="font-size:13px;color:#64748b;margin-bottom:12px;">Does this design look right? Click to approve or request changes:</p>
+  <div class="options">
+    <div class="option" data-choice="approve" onclick="toggleSelect(this)">
+      <div class="letter">✓</div>
+      <div class="content">
+        <h3>Approve — build it exactly like this</h3>
+        <p>Indicator bar with MA(9)/MA(20)/EMA(21)/RSI(14), drawing toolbar with trend line + horizontal level, OHLCV strip, fullscreen + zoom reset buttons, RSI sub-pane below candles.</p>
+      </div>
+    </div>
+    <div class="option" data-choice="tweak" onclick="toggleSelect(this)">
+      <div class="letter">✏</div>
+      <div class="content">
+        <h3>Looks good but I want changes</h3>
+        <p>Describe in the terminal what you'd like adjusted before we start building.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,76 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Prana Stream Demo</title>
+    <style>
+      body { font-family: sans-serif; margin: 16px; }
+      pre { background: #111; color: #0f0; padding: 12px; height: 300px; overflow: auto; }
+      input, button { margin: 4px; }
+    </style>
+    <script src="https://cdn.socket.io/4.8.1/socket.io.min.js"></script>
+  </head>
+  <body>
+    <h2>Prana Stream Demo</h2>
+    <div>
+      <input id="token" placeholder="JWT token" size="80" />
+      <button id="connect">Connect</button>
+      <button id="disconnect">Disconnect</button>
+    </div>
+    <div>
+      <input id="symbols" placeholder='[{"exchange":"NSE","symbol":"RELIANCE"}]' size="80" />
+      <button id="subscribe">Subscribe</button>
+    </div>
+    <pre id="log"></pre>
+    <script>
+      const log = (m) => {
+        const el = document.getElementById('log');
+        el.textContent += `\n${new Date().toISOString()} ${m}`;
+        el.scrollTop = el.scrollHeight;
+      };
+      let socket;
+      document.getElementById('connect').onclick = () => {
+        const token = document.getElementById('token').value;
+        socket = io('/ws/prana', { auth: { token } });
+        socket.on('connect', () => log('connected'));
+        socket.on('disconnect', () => log('disconnected'));
+        socket.on('snapshot', (s) => log('snapshot ' + JSON.stringify(s)));
+        socket.on('watchlist.ticks', (t) => log('ticks ' + JSON.stringify(t)));
+        socket.on('order.updated', (o) => log('order ' + JSON.stringify(o)));
+        socket.on('position.updated', (p) => log('position ' + JSON.stringify(p)));
+        socket.on('account.updated', (a) => log('account ' + JSON.stringify(a)));
+      };
+      document.getElementById('disconnect').onclick = () => socket?.disconnect();
+      document.getElementById('subscribe').onclick = () => {
+        const symbols = JSON.parse(document.getElementById('symbols').value);
+        socket.emit('subscribe', { watchlist: symbols, orders: true, positions: true, accounts: true });
+      };
+    </script>
+  </body>
+  </html>
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>NestTrade Realtime API (AsyncAPI)</title>
+    <script src="https://unpkg.com/@asyncapi/web-component@1.0.0-next.76/lib/asyncapi-web-component.js"></script>
+    <style>
+      html, body { margin: 0; padding: 0; height: 100%; }
+      #root { height: 100%; }
+    </style>
+  </head>
+  <body>
+    <div id="root">
+      <asyncapi-component
+        schemaUrl="/docs/ws/asyncapi.yaml"
+        theme="light"
+        show="sidebar servers operations messages" >
+      </asyncapi-component>
+    </div>
+  </body>
+  </html>
+
+
+

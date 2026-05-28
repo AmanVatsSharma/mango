@@ -1,0 +1,15 @@
+{
+  "name": "backend-auth",
+  "$schema": "../../../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "apps/backend/src/modules/auth",
+  "projectType": "library",
+  "tags": ["type:lib", "scope:backend", "domain:auth", "layer:domain"],
+  "targets": {
+    "lint": {
+      "executor": "@nx/eslint:lint",
+      "options": {
+        "lintFilePatterns": ["apps/backend/src/modules/auth/**/*.ts"]
+      }
+    }
+  }
+}

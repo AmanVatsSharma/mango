@@ -1,0 +1,91 @@
+<h2>Order screen — what's the biggest friction point?</h2>
+<p class="subtitle">The current flow: tap stock → peek → drag up → tap Buy → full form → swipe. What should feel smoother?</p>
+
+<div class="options">
+  <div class="option" data-choice="quick-order" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Quick-Order from Peek</h3>
+      <p>Tap Buy/Sell in the peek card (50% snap) → a compact 3-field overlay appears right there (qty, market/limit, swipe). No full-screen needed for simple market orders. Full form still available via "Advanced".</p>
+      <div class="mockup" style="margin-top:0.75rem">
+        <div class="mockup-header">Peek → Quick Order</div>
+        <div class="mockup-body" style="background:#0a0a0a;padding:0;font-family:monospace">
+          <div style="padding:0.6rem 0.75rem;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #111">
+            <span style="color:#fff;font-weight:700">RELIANCE</span>
+            <span style="color:#22c55e">₹2,851.20</span>
+          </div>
+          <div style="background:#0d1117;padding:0.75rem;border-top:2px solid #22c55e">
+            <div style="display:flex;gap:0.5rem;margin-bottom:0.6rem;font-size:0.75rem">
+              <div style="flex:1;background:#1a1a1a;border-radius:6px;padding:0.4rem;display:flex;justify-content:space-between;align-items:center">
+                <span style="color:#888">Qty</span>
+                <div style="display:flex;align-items:center;gap:0.4rem">
+                  <span style="color:#888;font-size:1rem">−</span>
+                  <span style="color:#fff;font-weight:700">1</span>
+                  <span style="color:#22c55e;font-size:1rem">+</span>
+                </div>
+              </div>
+              <div style="flex:1;background:#1a1a1a;border-radius:6px;padding:0.4rem;text-align:center;color:#60a5fa;font-size:0.75rem">Market</div>
+            </div>
+            <div style="background:#14532d;border-radius:8px;padding:0.5rem;text-align:center;color:#22c55e;font-weight:700;font-size:0.8rem">
+              Swipe to BUY → ₹2,851.20
+            </div>
+            <div style="text-align:center;color:#888;font-size:0.65rem;margin-top:0.4rem">Advanced options ↓</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="smart-qty" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Smart Quantity Suggestions</h3>
+      <p>On the order screen, show 3 quick-tap chips: "Max affordable", "½ capital", "1 lot". Tapping a chip sets quantity instantly. Huge time saver vs typing on mobile keyboard.</p>
+      <div class="mockup" style="margin-top:0.75rem">
+        <div class="mockup-header">Order Screen — Smart Qty</div>
+        <div class="mockup-body" style="background:#0a0a0a;padding:0.75rem;font-family:monospace">
+          <div style="color:#888;font-size:0.65rem;margin-bottom:0.4rem">QUANTITY</div>
+          <div style="background:#111;border:1px solid #333;border-radius:8px;padding:0.6rem;text-align:center;color:#fff;font-size:1.2rem;font-weight:700;margin-bottom:0.5rem">10</div>
+          <div style="display:flex;gap:0.4rem;font-size:0.65rem">
+            <div style="flex:1;background:#1a1a2e;border:1px solid #3b82f6;border-radius:6px;padding:0.35rem;text-align:center;color:#60a5fa">Max<br><span style="color:#fff;font-weight:700">4</span></div>
+            <div style="flex:1;background:#1a1a1a;border-radius:6px;padding:0.35rem;text-align:center;color:#888">½ cap<br><span style="color:#fff;font-weight:700">2</span></div>
+            <div style="flex:1;background:#1a1a1a;border-radius:6px;padding:0.35rem;text-align:center;color:#888">1 lot<br><span style="color:#fff;font-weight:700">1</span></div>
+          </div>
+          <div style="color:#888;font-size:0.6rem;margin-top:0.4rem">₹12,300 available · max 4 shares</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="price-stepper" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>Price Tick Stepper</h3>
+      <p>For limit orders, replace the text input with a stepper that moves by 1 tick (0.05 for NSE equities). Long-press to fast-scroll. Shows bid/ask as anchors. No more fat-finger decimal mistakes.</p>
+      <div class="mockup" style="margin-top:0.75rem">
+        <div class="mockup-header">Limit Price Stepper</div>
+        <div class="mockup-body" style="background:#0a0a0a;padding:0.75rem;font-family:monospace">
+          <div style="color:#888;font-size:0.65rem;margin-bottom:0.4rem">LIMIT PRICE  <span style="color:#3b82f6">+0.05 per tap</span></div>
+          <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.5rem">
+            <div style="background:#1a1a1a;border-radius:8px;width:36px;height:36px;display:flex;align-items:center;justify-content:center;color:#888;font-size:1.2rem">−</div>
+            <div style="flex:1;background:#111;border:1px solid #3b82f6;border-radius:8px;padding:0.6rem;text-align:center;color:#fff;font-size:1.1rem;font-weight:700">₹2,849.50</div>
+            <div style="background:#1a1a1a;border-radius:8px;width:36px;height:36px;display:flex;align-items:center;justify-content:center;color:#22c55e;font-size:1.2rem">+</div>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:0.65rem;color:#888">
+            <span>Bid ₹2,848.90</span>
+            <span>LTP ₹2,851.20</span>
+            <span>Ask ₹2,851.85</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="all-three" onclick="toggleSelect(this)">
+    <div class="letter">D</div>
+    <div class="content">
+      <h3>All Three — They're independent</h3>
+      <p>Quick-order from peek for speed, smart qty chips on the full form, and tick stepper for limit price entry. They don't conflict — each solves a different friction point.</p>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,15 @@
+# Add these dependencies to your package.json:
+
+```json
+{
+  "dependencies": {
+    "@aws-sdk/client-sns": "^3.x.x"
+  }
+}
+```
+
+# Install command:
+npm install @aws-sdk/client-sns --force
+
+# Database update command:
+npx prisma db push

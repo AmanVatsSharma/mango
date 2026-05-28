@@ -1,0 +1,25 @@
+---
+description: (Top-of-file header — add to every .ts file)
+alwaysApply: false
+---
+# File header template (single source of truth)
+
+Use this format at the top of every source file. Align with existing codebase style.
+
+/**
+ * @file <filename>
+ * @module <module-name>
+ * @description <short description>
+ * @author BharatERP
+ * @created YYYY-MM-DD
+ * @last-updated YYYY-MM-DD (optional; update when making significant changes)
+ * Notes (optional):
+ * - Behavior and side-effects
+ * - Which functions to read first
+ */
+
+Replace placeholders:
+- <filename> — e.g. http-exception.filter.ts
+- <module-name> — e.g. common-filters, backend-users
+- <short description> — one sentence
+- YYYY-MM-DD — date in ISO format

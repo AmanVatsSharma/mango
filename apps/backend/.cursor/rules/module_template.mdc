@@ -1,0 +1,31 @@
+---
+description: ApplyToPattern pattern: /modules//module-template
+alwaysApply: false
+---
+# module_template.mdc
+type: ApplyToPattern
+pattern: **/modules/*/module-template
+
+# Scaffold pattern for a module named <module>
+- modules/<module>/
+  - module.ts
+  - <module>.controller.ts
+  - <module>.service.ts
+  - dto/
+    - create-<module>.dto.ts
+    - update-<module>.dto.ts
+  - entities/
+    - <module>.entity.ts
+  - repository/
+    - <module>.repository.ts
+  - MODULE_DOC.md
+  - __tests__/
+    - <module>.service.spec.ts
+  - flowcharts/
+    - <module>-flow.svg or .drawio
+
+# Rules
+- Use Nest CLI for scaffold: nest g module <module> && nest g service <module> && nest g controller <module>
+- Add top-of-file header to each generated file.
+- Add logger.debug at entry/exit of all public service methods.
+- Add integration tests skeleton that uses testcontainers/postgres.

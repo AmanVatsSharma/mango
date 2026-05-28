@@ -1,0 +1,47 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "_comment": [
+    "Cron schedules for the four critical background jobs.",
+    "",
+    "Trading-b0j: pre-fix none of these had a Vercel schedule, so a deploy",
+    "without an external cron caller (system cron / Cloud Scheduler) ran with",
+    "ZERO automated risk monitoring or order/position-pnl drainage. Adding",
+    "explicit schedules here makes the safety net Vercel-self-sufficient.",
+    "",
+    "Cadence rationale:",
+    "- risk-monitoring: every minute (Vercel cron minimum on Pro plan).",
+    "  Sub-minute frequencies require an external scheduler — see",
+    "  docs/modules/risk/MODULE_DOC.md for the EC2/Docker runbook.",
+    "- order-worker: every minute. Drains queued orders that the long-running",
+    "  worker may have missed during a deploy/restart window.",
+    "- position-pnl-worker: every minute. Same backstop role for PnL updates.",
+    "- session-security-retention: hourly. Audit-log/session pruning that",
+    "  doesn't need sub-hour resolution.",
+    "- watchlist-expiry-sweep: hourly. Deletes expired derivative items.",
+    "",
+    "Vercel Hobby plan does NOT support these schedules — production runs on",
+    "the Pro plan or via the EC2/Docker long-running worker variant."
+  ],
+  "crons": [
+    {
+      "path": "/api/cron/risk-monitoring",
+      "schedule": "* * * * *"
+    },
+    {
+      "path": "/api/cron/order-worker",
+      "schedule": "* * * * *"
+    },
+    {
+      "path": "/api/cron/position-pnl-worker",
+      "schedule": "* * * * *"
+    },
+    {
+      "path": "/api/cron/session-security-retention",
+      "schedule": "0 * * * *"
+    },
+    {
+      "path": "/api/cron/watchlist-expiry-sweep",
+      "schedule": "0 * * * *"
+    }
+  ]
+}

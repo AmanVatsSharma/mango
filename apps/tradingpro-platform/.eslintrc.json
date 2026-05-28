@@ -1,0 +1,17 @@
+{
+  "extends": [
+    "next/core-web-vitals",
+    "@next/eslint-config-next"
+  ],
+  "rules": {
+    "@typescript-eslint/no-unused-vars": "warn",
+    "@typescript-eslint/no-explicit-any": "off"
+  },
+  "ignorePatterns": [
+    "generated/**/*",
+    "node_modules/**/*",
+    ".next/**/*",
+    "out/**/*",
+    "prisma/migrations/**/*"
+  ]
+}

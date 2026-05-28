@@ -1,0 +1,9 @@
+---
+description:
+globs:
+alwaysApply: true
+---
+- Centralize all errors in src/common/errors/
+- Create domain errors: OrderValidationError, InsufficientMarginError, ExchangeDownError, DuplicateOrderError
+- Map domain errors to HTTP status codes in an ExceptionFilter
+- Always log stack traces and requestId for traceability

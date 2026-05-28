@@ -1,0 +1,9 @@
+---
+description:
+globs:
+alwaysApply: true
+---
+# logger_setup.mdc
+- Use Pino with default transport that prints pretty in dev and JSON in prod.
+- Expose a `LoggerService` wrapper to inject into Nest services/controllers.
+- Ensure logger accepts context and requestId fields.

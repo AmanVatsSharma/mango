@@ -1,0 +1,22 @@
+{
+  "name": "backend-execution-gateway",
+  "$schema": "../../../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "apps/backend/src/modules/execution-gateway",
+  "projectType": "library",
+  "tags": ["type:lib", "scope:backend", "domain:execution-gateway", "layer:domain"],
+  "targets": {
+    "lint": {
+      "executor": "@nx/eslint:lint",
+      "options": {
+        "lintFilePatterns": ["apps/backend/src/modules/execution-gateway/**/*.ts"]
+      }
+    },
+    "test": {
+      "executor": "@nx/jest:jest",
+      "options": {
+        "jestConfig": "apps/backend/jest.config.ts",
+        "testPathPattern": ["apps/backend/src/modules/execution-gateway/tests"]
+      }
+    }
+  }
+}

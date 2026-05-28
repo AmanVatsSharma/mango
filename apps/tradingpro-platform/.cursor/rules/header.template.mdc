@@ -1,0 +1,15 @@
+---
+description: (Top-of-file header — add to every .ts file)
+alwaysApply: false
+---
+in detailed 
+/**
+* File: <repo-path>
+* Module: <module-name>
+* Purpose: <one-sentence description>
+* Author: Cursor / <dev>
+* Last-updated: YYYY-MM-DD
+* Notes:
+* - Behavior and side-effects
+* - Which functions to read first
+*/

@@ -1,0 +1,15 @@
+{
+  "name": "backend-notifications",
+  "$schema": "../../../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "apps/backend/src/modules/notifications",
+  "projectType": "library",
+  "tags": ["type:lib", "scope:backend", "domain:notifications", "layer:domain"],
+  "targets": {
+    "lint": {
+      "executor": "@nx/eslint:lint",
+      "options": {
+        "lintFilePatterns": ["apps/backend/src/modules/notifications/**/*.ts"]
+      }
+    }
+  }
+}

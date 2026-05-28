@@ -1,0 +1,15 @@
+{
+  "name": "backend-reconciliation",
+  "$schema": "../../../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "apps/backend/src/modules/reconciliation",
+  "projectType": "library",
+  "tags": ["type:lib", "scope:backend", "domain:reconciliation", "layer:domain"],
+  "targets": {
+    "lint": {
+      "executor": "@nx/eslint:lint",
+      "options": {
+        "lintFilePatterns": ["apps/backend/src/modules/reconciliation/**/*.ts"]
+      }
+    }
+  }
+}

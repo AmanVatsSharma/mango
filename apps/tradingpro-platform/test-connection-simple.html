@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Simple Socket.IO Connection Test</title>
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <style>
+        body {
+            font-family: monospace;
+            padding: 20px;
+            background: #1e1e1e;
+            color: #d4d4d4;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        .connected {
+            background: #4CAF50;
+            color: white;
+        }
+        .connecting {
+            background: #ff9800;
+            color: white;
+        }
+        .error {
+            background: #f44336;
+            color: white;
+        }
+        .disconnected {
+            background: #666;
+            color: white;
+        }
+        #log {
+            margin-top: 20px;
+            padding: 10px;
+            background: #252526;
+            border: 1px solid #3e3e42;
+            border-radius: 4px;
+            max-height: 500px;
+            overflow-y: auto;
+            font-size: 12px;
+        }
+        .log-entry {
+            margin: 5px 0;
+            padding: 5px;
+            border-left: 3px solid #007acc;
+            padding-left: 10px;
+        }
+        .log-success {
+            border-left-color: #4CAF50;
+            color: #4CAF50;
+        }
+        .log-error {
+            border-left-color: #f44336;
+            color: #f44336;
+        }
+        .log-warning {
+            border-left-color: #ff9800;
+            color: #ff9800;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔌 Socket.IO Connection Test</h1>
+    
+    <div>
+        <label>URL:</label>
+        <input type="text" id="url" value="https://marketdata.vedpragya.com/market-data" style="width: 400px; padding: 5px; margin: 5px;">
+    </div>
+    <div>
+        <label>API Key:</label>
+        <input type="text" id="apiKey" value="demo-key-1" style="width: 200px; padding: 5px; margin: 5px;">
+    </div>
+    <div>
+        <button onclick="testConnection()" style="padding: 10px 20px; margin: 10px 0; cursor: pointer; background: #007acc; color: white; border: none; border-radius: 4px;">
+            Test Connection
+        </button>
+        <button onclick="clearLog()" style="padding: 10px 20px; margin: 10px 0; cursor: pointer; background: #666; color: white; border: none; border-radius: 4px;">
+            Clear Log
+        </button>
+    </div>
+    
+    <div id="status" class="status disconnected">Not Connected</div>
+    
+    <div id="log"></div>
+
+    <script>
+        let socket = null;
+        let connectionStartTime = null;
+
+        function log(message, type = 'info') {
+            const logDiv = document.getElementById('log');
+            const entry = document.createElement('div');
+            entry.className = `log-entry log-${type}`;
+            const timestamp = new Date().toLocaleTimeString();
+            entry.textContent = `[${timestamp}] ${message}`;
+            logDiv.insertBefore(entry, logDiv.firstChild);
+        }
+
+        function updateStatus(status, message) {
+            const statusDiv = document.getElementById('status');
+            statusDiv.className = `status ${status}`;
+            statusDiv.textContent = message;
+        }
+
+        function clearLog() {
+            document.getElementById('log').innerHTML = '';
+        }
+
+        function testConnection() {
+            const url = document.getElementById('url').value;
+            const apiKey = document.getElementById('apiKey').value;
+
+            if (!url || !apiKey) {
+                alert('Please enter both URL and API Key');
+                return;
+            }
+
+            // Disconnect existing connection
+            if (socket) {
+                socket.disconnect();
+                socket = null;
+            }
+
+            clearLog();
+            updateStatus('connecting', 'Connecting...');
+            connectionStartTime = Date.now();
+
+            log(`🔌 Connecting to: ${url}`);
+            log(`🔑 Using API Key: ${apiKey.substring(0, 8)}...`);
+
+            // Create Socket.IO connection - EXACT SAME AS WORKING HTML FILE
+            socket = io(url, {
+                query: {
+                    'api_key': apiKey
+                },
+                transports: ['websocket', 'polling'],
+                reconnection: true,
+                reconnectionDelay: 1000,
+                reconnectionAttempts: 5,
+                timeout: 10000
+            });
+
+            // Connection successful
+            socket.on('connect', () => {
+                const connectionTime = Date.now() - connectionStartTime;
+                updateStatus('connected', `✅ Connected! (${connectionTime}ms)`);
+                log(`✅ Connected successfully!`, 'success');
+                log(`Socket ID: ${socket.id}`, 'success');
+                log(`Transport: ${socket.io.engine.transport.name}`, 'success');
+                log(`Connection time: ${connectionTime}ms`, 'success');
+
+                // Test subscription after 1 second
+                setTimeout(() => {
+                    log('📡 Testing subscription to Nifty 50 (token: 26000)...');
+                    socket.emit('subscribe', {
+                        instruments: [26000],
+                        mode: 'ltp'
+                    });
+                }, 1000);
+            });
+
+            // Server confirmation
+            socket.on('connected', (data) => {
+                log(`📥 Server confirmation received:`, 'success');
+                log(`   Message: ${data.message || 'N/A'}`, 'success');
+                log(`   Client ID: ${data.clientId || 'N/A'}`, 'success');
+                log(`   Timestamp: ${data.timestamp || 'N/A'}`, 'success');
+            });
+
+            // Subscription confirmed
+            socket.on('subscription_confirmed', (data) => {
+                log(`✅ Subscription confirmed!`, 'success');
+                log(`   Instruments: ${data.instruments?.join(', ') || 'N/A'}`, 'success');
+                log(`   Mode: ${data.mode || 'N/A'}`, 'success');
+            });
+
+            // Market data received
+            socket.on('market_data', (data) => {
+                log(`📊 Market Data:`, 'success');
+                log(`   Token: ${data.instrumentToken}`, 'success');
+                log(`   Price: ${data.data?.last_price || 'N/A'}`, 'success');
+                log(`   Timestamp: ${data.timestamp || 'N/A'}`, 'success');
+            });
+
+            // Error handling
+            socket.on('error', (error) => {
+                updateStatus('error', `Error: ${error.code || error.message}`);
+                log(`❌ Error Event:`, 'error');
+                log(`   Code: ${error.code || 'N/A'}`, 'error');
+                log(`   Message: ${error.message || 'N/A'}`, 'error');
+            });
+
+            socket.on('connect_error', (error) => {
+                updateStatus('error', `Connection Error: ${error.message}`);
+                log(`❌ Connection Error:`, 'error');
+                log(`   Message: ${error.message || 'N/A'}`, 'error');
+                log(`   Type: ${error.type || 'N/A'}`, 'error');
+                log(`   Description: ${error.description || 'N/A'}`, 'error');
+            });
+
+            socket.on('disconnect', (reason) => {
+                updateStatus('disconnected', `Disconnected: ${reason}`);
+                log(`⚠️ Disconnected: ${reason}`, 'warning');
+            });
+
+            socket.on('reconnect', (attemptNumber) => {
+                log(`🔄 Reconnected after ${attemptNumber} attempts`, 'success');
+            });
+
+            socket.on('reconnect_attempt', (attemptNumber) => {
+                log(`🔄 Reconnect attempt ${attemptNumber}...`, 'warning');
+            });
+
+            socket.on('reconnect_error', (error) => {
+                log(`❌ Reconnect error: ${error.message}`, 'error');
+            });
+
+            socket.on('reconnect_failed', () => {
+                log(`❌ Failed to reconnect after all attempts`, 'error');
+                updateStatus('error', 'Reconnection failed');
+            });
+
+            // Timeout check
+            setTimeout(() => {
+                if (!socket || !socket.connected) {
+                    updateStatus('error', 'Connection timeout after 30 seconds');
+                    log(`❌ Connection timeout - No connection after 30 seconds`, 'error');
+                    log(`Socket connected: ${socket?.connected || false}`, 'error');
+                    log(`Socket ID: ${socket?.id || 'none'}`, 'error');
+                }
+            }, 30000);
+        }
+
+        // Auto-test on load
+        window.onload = () => {
+            log('🚀 Ready to test connection');
+            log('Click "Test Connection" button or edit URL/API Key first');
+        };
+    </script>
+</body>
+</html>
+

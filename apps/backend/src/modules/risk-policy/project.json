@@ -1,0 +1,15 @@
+{
+  "name": "backend-risk-policy",
+  "$schema": "../../../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "apps/backend/src/modules/risk-policy",
+  "projectType": "library",
+  "tags": ["type:lib", "scope:backend", "domain:risk-policy", "layer:domain"],
+  "targets": {
+    "lint": {
+      "executor": "@nx/eslint:lint",
+      "options": {
+        "lintFilePatterns": ["apps/backend/src/modules/risk-policy/**/*.ts"]
+      }
+    }
+  }
+}

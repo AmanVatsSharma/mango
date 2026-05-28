@@ -1,0 +1,185 @@
+/**
+ * File:        apps/broker-admin/src/app/global.css
+ * Module:      broker-admin · Global Styles
+ * Purpose:     Tailwind base + Obsidian UI tokens + legacy prototype CSS classes mapped to obsidian vars
+ *
+ * Key invariants:
+ *   - All color values use var(--*) tokens from obsidian-ui — no hard-coded hex
+ *   - font-mono classes always include font-feature-settings: "tnum" 1 for tabular nums
+ *
+ * Author:      BharatERP
+ * Last-updated: 2026-04-25
+ */
+
+@import '../../../../libs/obsidian-ui/src/styles/tokens.css';
+@import '../../../../libs/obsidian-ui/src/styles/obsidian-ui.css';
+@import '../../../../libs/web-auth/src/auth.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  *, *::before, *::after { box-sizing: border-box; }
+
+  html {
+    background-color: var(--bg-base);
+    color: var(--fg1);
+    font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Scrollbar — thin, theme-adaptive */
+  ::-webkit-scrollbar              { width: 4px; height: 4px; }
+  ::-webkit-scrollbar-track        { background: transparent; }
+  ::-webkit-scrollbar-thumb        { background: var(--border-md); border-radius: 2px; }
+  ::-webkit-scrollbar-thumb:hover  { background: var(--border-hi); }
+  .scrollbar-none::-webkit-scrollbar { display: none; }
+}
+
+@layer components {
+  /* ─── KPI CARDS ─────────────────────────────────────────── */
+  .kpi-card {
+    @apply relative cursor-pointer overflow-hidden rounded-r-lg border border-[var(--border)] bg-[var(--bg-panel)] p-4 transition-colors duration-[120ms] hover:border-[var(--border-md)] hover:bg-[var(--bg-elevated)];
+  }
+  .kpi-label {
+    @apply font-display text-[9px] font-semibold tracking-[0.12em] text-fg3 uppercase;
+  }
+  .kpi-value {
+    @apply mt-1.5 font-mono text-[22px] font-bold leading-none text-fg1;
+    font-feature-settings: "tnum" 1;
+  }
+  .kpi-bottom {
+    @apply mt-2 flex items-end justify-between;
+  }
+  .kpi-delta {
+    @apply flex items-center gap-1 font-mono text-[11px] font-semibold;
+    font-feature-settings: "tnum" 1;
+  }
+  .kpi-sub {
+    @apply mt-0.5 font-sans text-[11px] text-fg3;
+  }
+
+  /* ─── MODULE HEADER ──────────────────────────────────────── */
+  .module-header {
+    @apply flex items-start justify-between border-b border-[var(--border)] px-6 py-4;
+  }
+  .module-title {
+    @apply font-display text-[13px] font-semibold tracking-[0.08em] text-fg1 uppercase;
+  }
+  .module-subtitle {
+    @apply mt-0.5 font-sans text-[12px] text-fg3;
+  }
+
+  /* ─── CARDS ─────────────────────────────────────────────── */
+  .card {
+    @apply rounded-r-lg border border-[var(--border)] bg-[var(--bg-panel)];
+  }
+  .card-header {
+    @apply flex items-center justify-between border-b border-[var(--border)] px-4 py-3;
+  }
+  .card-title {
+    @apply font-display text-[11px] font-semibold tracking-[0.1em] text-fg1 uppercase;
+  }
+
+  /* ─── TABLES ─────────────────────────────────────────────── */
+  .data-table {
+    @apply w-full border-collapse;
+  }
+  .data-table th {
+    @apply border-b border-[var(--border)] bg-[var(--bg-elevated)] px-3 py-2 text-left font-display text-[9px] font-semibold tracking-[0.1em] text-fg3 uppercase;
+  }
+  .data-table td {
+    @apply border-b border-[var(--border)] px-3 py-2.5 font-sans text-[12px] text-fg2;
+  }
+  .data-table tr:hover td {
+    @apply bg-[var(--bg-hover)] text-fg1;
+  }
+  .data-table .mono-cell {
+    @apply font-mono text-[12px];
+    font-feature-settings: "tnum" 1;
+  }
+
+  /* ─── BADGES / PILLS ─────────────────────────────────────── */
+  .badge {
+    @apply rounded-full px-2 py-0.5 font-mono text-[10px] font-semibold;
+    font-feature-settings: "tnum" 1;
+  }
+  .badge-bull    { @apply bg-bull/15 text-bull; }
+  .badge-bear    { @apply bg-bear/15 text-bear; }
+  .badge-warn    { @apply bg-warn/15 text-warn; }
+  .badge-accent  { @apply bg-accent/15 text-accent; }
+  .badge-gold    { @apply bg-gold/15 text-gold; }
+  .badge-purple  { @apply bg-purple/15 text-purple; }
+  .badge-muted   { @apply bg-[var(--bg-elevated)] text-fg3; }
+
+  /* Type badges */
+  .type-vip         { @apply badge badge-gold; }
+  .type-pro         { @apply badge badge-purple; }
+  .type-retail      { @apply badge badge-muted; }
+  .type-institutional { @apply badge badge-accent; }
+
+  /* Status badges */
+  .status-active    { @apply badge badge-bull; }
+  .status-pending   { @apply badge badge-warn; }
+  .status-suspended { @apply badge badge-bear; }
+  .status-dormant   { @apply badge badge-muted; }
+
+  /* KYC badges */
+  .kyc-verified  { @apply badge badge-bull; }
+  .kyc-pending   { @apply badge badge-warn; }
+  .kyc-rejected  { @apply badge badge-bear; }
+  .kyc-expired   { @apply badge-muted badge; }
+
+  /* ─── BUTTONS ────────────────────────────────────────────── */
+  .btn {
+    @apply inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-r-md font-sans text-[12px] font-medium transition-colors duration-[120ms] disabled:cursor-not-allowed disabled:opacity-40;
+  }
+  .btn-primary {
+    @apply btn bg-accent px-3 py-1.5 text-white hover:bg-accent/90;
+  }
+  .btn-ghost {
+    @apply btn border border-[var(--border)] bg-transparent px-3 py-1.5 text-fg2 hover:bg-[var(--bg-hover)] hover:text-fg1;
+  }
+  .btn-danger {
+    @apply btn bg-bear/10 border border-bear/30 px-3 py-1.5 text-bear hover:bg-bear/20;
+  }
+  .btn-bull {
+    @apply btn bg-bull/10 border border-bull/30 px-3 py-1.5 text-bull hover:bg-bull/20;
+  }
+  .btn-sm  { @apply px-2.5 py-1 text-[11px]; }
+  .btn-xs  { @apply px-2 py-0.5 text-[10px]; }
+
+  /* ─── INPUTS ─────────────────────────────────────────────── */
+  .input {
+    @apply h-8 w-full rounded-r-md border border-[var(--border)] bg-[var(--bg-elevated)] px-3 font-sans text-[12px] text-fg1 placeholder:text-fg3 outline-none transition-colors focus:border-accent/50 focus:ring-1 focus:ring-accent/20;
+  }
+  .input-sm { @apply h-7 text-[11px] px-2.5; }
+
+  /* ─── CHART TABS ─────────────────────────────────────────── */
+  .chart-tabs {
+    @apply flex gap-1 p-1 rounded-r-md bg-[var(--bg-elevated)] border border-[var(--border)] w-fit;
+  }
+  .chart-tab {
+    @apply rounded-r-sm px-2.5 py-1 font-sans text-[11px] text-fg3 transition-colors hover:text-fg2 cursor-pointer;
+  }
+  .chart-tab.active {
+    @apply bg-[var(--bg-panel)] text-fg1 border border-[var(--border-md)];
+  }
+
+  /* ─── SKELETON ───────────────────────────────────────────── */
+  .skeleton {
+    @apply animate-pulse rounded bg-[var(--bg-elevated)];
+  }
+
+  /* ─── SEVERITY DOTS ──────────────────────────────────────── */
+  .severity-critical { @apply h-2 w-2 rounded-full bg-bear; }
+  .severity-high     { @apply h-2 w-2 rounded-full bg-warn; }
+  .severity-medium   { @apply h-2 w-2 rounded-full bg-gold; }
+  .severity-low      { @apply h-2 w-2 rounded-full bg-fg3; }
+
+  /* ─── P&L DELTA TEXT ─────────────────────────────────────── */
+  .delta-positive { @apply font-mono text-bull; font-feature-settings: "tnum" 1; }
+  .delta-negative { @apply font-mono text-bear; font-feature-settings: "tnum" 1; }
+  .delta-neutral  { @apply font-mono text-fg3;  font-feature-settings: "tnum" 1; }
+}

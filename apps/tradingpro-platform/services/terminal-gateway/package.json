@@ -1,0 +1,27 @@
+{
+  "name": "@tradebazaar/terminal-gateway",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "WebSocket PTY bridge for admin Live shell (node-pty)",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/index.js",
+    "dev": "tsx watch src/index.ts"
+  },
+  "dependencies": {
+    "jsonwebtoken": "^9.0.2",
+    "node-pty": "^1.0.0",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "@types/jsonwebtoken": "^9.0.7",
+    "@types/node": "^20.14.0",
+    "@types/ws": "^8.5.14",
+    "tsx": "^4.20.3",
+    "typescript": "^5.9.3"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

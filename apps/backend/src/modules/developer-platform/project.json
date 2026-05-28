@@ -1,0 +1,22 @@
+{
+  "name": "backend-developer-platform",
+  "$schema": "../../../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "apps/backend/src/modules/developer-platform",
+  "projectType": "library",
+  "tags": ["type:lib", "scope:backend", "domain:developer-platform", "layer:domain"],
+  "targets": {
+    "lint": {
+      "executor": "@nx/eslint:lint",
+      "options": {
+        "lintFilePatterns": ["apps/backend/src/modules/developer-platform/**/*.ts"]
+      }
+    },
+    "test": {
+      "executor": "@nx/jest:jest",
+      "options": {
+        "jestConfig": "apps/backend/jest.config.ts",
+        "testPathPattern": ["apps/backend/src/modules/developer-platform/tests"]
+      }
+    }
+  }
+}

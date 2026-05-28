@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="360" height="80" viewBox="0 0 360 80" fill="none">
+  <rect x="4" y="8" width="64" height="64" rx="14" fill="url(#brandGradient)" />
+  <path d="M21 52V28H26L36 42L46 28H51V52H46V36L36 50L26 36V52H21Z" fill="white" />
+  <text x="84" y="44" fill="#0F172A" font-family="Inter, Arial, sans-serif" font-size="30" font-weight="700">TradeBazaar</text>
+  <defs>
+    <linearGradient id="brandGradient" x1="10" y1="14" x2="62" y2="62" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#06B6D4" />
+      <stop offset="1" stop-color="#8B5CF6" />
+    </linearGradient>
+  </defs>
+</svg>

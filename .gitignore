@@ -1,0 +1,70 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+.turbo/
+build/
+
+# Nx
+.nx/
+
+# Playwright
+.playwright-mcp/
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Console screenshots (large non-code artifacts)
+console-*.txt
+*.png
+
+# Embedded git repos (not submodules)
+apps/tradingpro-mobile/.git/
+
+# tradingpro-platform exclusions (matches its standalone Next.js setup)
+apps/tradingpro-platform/.next/
+apps/tradingpro-platform/out/
+apps/tradingpro-platform/build/
+apps/tradingpro-platform/coverage/
+apps/tradingpro-platform/generated/
+apps/tradingpro-platform/prisma/generated/
+apps/tradingpro-platform/.dolt/
+apps/tradingpro-platform/*.db
+apps/tradingpro-platform/.beads-credential-key
+apps/tradingpro-platform/bun.lockb
+apps/tradingpro-platform/next-env.d.ts
+
+# Per-app specific exclusions
+apps/backend/dist/
+apps/backend/.nest/
+apps/frontend/.next/
+apps/frontend/out/
+apps/broker-admin/.next/
+apps/tradingpro-mobile/.next/
+
+# Environment files with credentials
+.env
+.env.local
+.env.*.local
+apps/tradingpro-platform/.env
+apps/tradingpro-platform/.env.*.local
+
+# Temp
+tmp/

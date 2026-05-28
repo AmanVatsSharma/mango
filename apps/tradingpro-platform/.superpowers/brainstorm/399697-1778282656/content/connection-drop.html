@@ -1,0 +1,75 @@
+<h2>WebSocket drops — what does the user see?</h2>
+<p class="subtitle">Feed disconnects happen. Prices go stale. The user might place an order on a 2-minute-old price. How do we handle it?</p>
+
+<div class="options">
+  <div class="option" data-choice="banner" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Sticky Banner — Non-blocking</h3>
+      <p>A slim amber bar slides in at the top of the watchlist: "Feed paused — reconnecting…". Prices dim slightly. When reconnected, bar slides out with a brief "Live ✓" flash. Trading still allowed.</p>
+      <div class="mockup" style="margin-top:0.75rem">
+        <div class="mockup-header">Disconnected state</div>
+        <div class="mockup-body" style="background:#0a0a0a;padding:0;font-family:monospace">
+          <div style="background:#451a03;border-bottom:1px solid #f59e0b;padding:0.4rem 0.75rem;display:flex;align-items:center;justify-content:space-between">
+            <span style="color:#fbbf24;font-size:0.7rem;font-weight:600">⚡ Feed paused — reconnecting…</span>
+            <span style="color:#f59e0b;font-size:0.65rem">12s</span>
+          </div>
+          <div style="padding:0.65rem 0.75rem;display:flex;justify-content:space-between;font-size:0.85rem;opacity:0.45;border-bottom:1px solid #111">
+            <span style="color:#fff;font-weight:700">RELIANCE</span>
+            <span style="color:#888">₹2,847.50 <span style="font-size:0.65rem">(stale)</span></span>
+          </div>
+          <div style="padding:0.65rem 0.75rem;display:flex;justify-content:space-between;font-size:0.85rem;opacity:0.45">
+            <span style="color:#fff;font-weight:700">INFY</span>
+            <span style="color:#888">₹1,423.75 <span style="font-size:0.65rem">(stale)</span></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="block-orders" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Block Market Orders — Allow Limit</h3>
+      <p>Banner like A, but the order screen disables "Market" order type when feed is stale (>30s). Limit orders still allowed since the user sets the price. Protects against trading on bad data.</p>
+      <div class="mockup" style="margin-top:0.75rem">
+        <div class="mockup-header">Order screen — feed stale</div>
+        <div class="mockup-body" style="background:#0a0a0a;padding:0.75rem;font-family:monospace;font-size:0.8rem">
+          <div style="background:#451a03;border-radius:6px;padding:0.5rem 0.65rem;margin-bottom:0.75rem;color:#fbbf24;font-size:0.7rem">
+            ⚡ Live feed paused (34s) — market orders disabled
+          </div>
+          <div style="display:flex;gap:0.5rem;margin-bottom:0.5rem">
+            <div style="flex:1;background:#1a1a1a;border:1px solid #333;border-radius:6px;padding:0.4rem;text-align:center;color:#888;font-size:0.75rem;text-decoration:line-through;opacity:0.4">Market</div>
+            <div style="flex:1;background:#1a1a2e;border:1px solid #3b82f6;border-radius:6px;padding:0.4rem;text-align:center;color:#60a5fa;font-size:0.75rem;font-weight:700">Limit ✓</div>
+          </div>
+          <div style="color:#888;font-size:0.7rem">Set your price → place safely</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="smart" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>Smart Recovery — Auto-retry + REST Fallback</h3>
+      <p>Banner like A. But behind the scenes: auto-reconnects every 3s, and if WS is down, silently fetches prices via REST every 15s so the watchlist never goes fully stale. User barely notices.</p>
+      <div class="mockup" style="margin-top:0.75rem">
+        <div class="mockup-header">Degraded — but still showing prices</div>
+        <div class="mockup-body" style="background:#0a0a0a;padding:0;font-family:monospace">
+          <div style="background:#1c1000;border-bottom:1px solid #92400e;padding:0.4rem 0.75rem;display:flex;align-items:center;justify-content:space-between">
+            <span style="color:#d97706;font-size:0.7rem">⚡ Reconnecting… prices via REST</span>
+            <span style="color:#92400e;font-size:0.65rem">fallback</span>
+          </div>
+          <div style="padding:0.65rem 0.75rem;display:flex;justify-content:space-between;font-size:0.85rem;border-bottom:1px solid #111">
+            <span style="color:#fff;font-weight:700">RELIANCE</span>
+            <span style="color:#22c55e">₹2,849.00 <span style="color:#92400e;font-size:0.65rem">~15s</span></span>
+          </div>
+          <div style="padding:0.65rem 0.75rem;display:flex;justify-content:space-between;font-size:0.85rem">
+            <span style="color:#fff;font-weight:700">INFY</span>
+            <span style="color:#ef4444">₹1,421.50 <span style="color:#92400e;font-size:0.65rem">~15s</span></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

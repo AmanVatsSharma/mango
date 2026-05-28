@@ -1,0 +1,396 @@
+---
+description: Frontend Rules & Style Bible
+alwaysApply: false
+---
+# rules.mdc — Frontend Rules & Style Bible
+
+> **Purpose:** A machine-readable and human-readable rules file for an AI agent (Cursor/LLM) to generate enterprise-grade, polished frontend using Shadcn, Tailwind, and modern best practices. Each rule has: **Title**, **One-line Description**, **Detail**, **When to apply**, **Subcomponents to create**, **Example code/template**, and **Debugging/QA checklist**.
+
+---
+
+## 00 — Project Overview (meta)
+
+**Description:** Define the project scope, design system location, and entrypoints for the agent.
+**Detail:**
+
+* `design-system/` contains tokens, shadcn component overrides, and recipes.
+* `recipes/` contains high-level section templates (Hero, Dashboard, Auth flows).
+* `rules.mdc` is the single source of truth for styling, architecture, accessibility, and debugging rules.
+* Agent should check `project.config.json` for feature flags and target platform (web, mobile-web, embed).
+  **When to apply:** Always.
+  **Subcomponents:** `DesignTokens`, `ComponentRegistry`, `RecipeIndex`.
+  **Debug checklist:** Log `CONFIG_LOADED` with path, token version, recipe list.
+
+---
+
+## 01 — Use shadcn/ui components (Foundation)
+
+**Description:** Prefer shadcn/ui primitives over custom markup to enforce consistency.
+**Detail:**
+
+* Always import from `@/components/ui/*` (not from node\_modules directly). Maintain a local `components/ui` that re-exports and augments shadcn components.
+* Provide a `components/ui/index.ts` that centralizes exports and documents any extended props.
+* Only create custom components when a shadcn component cannot be composed to meet requirements.
+  **When to apply:** Default for all UI elements.
+  **Subcomponents to create:** `Button`, `Input`, `Card`, `Modal`, `Dropdown`, `Tooltip`, `Form`, `Skeleton`.
+  **Example:** Create `components/ui/Button.tsx` that wraps shadcn `Button` and adds `variant` mapping, consistent comments, and `data-testid`.
+  **Debug checklist:** Console: `UI_WRAPPER_LOADED: Button` with props shape.
+
+---
+
+## 02 — Design tokens & theming (Single source of truth)
+
+**Description:** Centralize colors, spacing, typography, and radii in tokens.
+**Detail:**
+
+* Use `design-system/tokens.json` and sync with `tailwind.config.js` via a small script `scripts/sync-tokens.js`.
+* Tokens: `colors`, `space`, `fontSizes`, `radii`, `shadows`, `z-index`.
+* Support `light` and `dark` modes and an optional `brand` theme.
+  **When to apply:** Always for style values.
+  **Subcomponents to create:** `ThemeProvider`, `useThemeTokens()` hook.
+  **Example:** Tokens file must include comments for each key explaining usage (e.g., `--space-4: used for small gaps between form elements`).
+  **Debug checklist:** Console: `TOKENS_SYNC_OK` with checksum.
+
+---
+
+## 03 — File & Folder Architecture (Enterprise scalable)
+
+**Description:** Maintainable mono-repo-friendly structure with clear responsibilities.
+**Detail:** Use feature folders and clear separation.
+
+```
+src/
+  components/            # UI primitives & wrappers (shadcn overrides)
+  features/              # Feature-level UI + logic (feature-first)
+    auth/
+      ui/
+      hooks/
+      api.ts
+  lib/                   # utilities, fetchers, clients
+  design-system/         # tokens, tailwind config, recipes
+  pages/ or app/         # routes
+  styles/                # global styles, base.css
+  tests/                 # e2e & integration
+  scripts/               # token-sync, scaffolding helpers
+```
+
+**When to apply:** New projects & large refactors.
+**Subcomponents to create:** `feature index files` that export UI/hook/api for reuse.
+**Debug checklist:** Console: `ARCHITECTURE_VALID` with missing recommended folders.
+
+---
+
+## 04 — Component Patterns & Subcomponents (Composition rules)
+
+**Description:** Components must be small, composable, and well-documented.
+**Detail:**
+
+* Atomic design approach: `atoms/`, `molecules/`, `organisms/` inside `components/`.
+* Each component folder: `Component.tsx`, `Component.test.tsx`, `Component.stories.tsx`, `README.md` (usage, props table), `index.ts` re-export.
+* Comments: top of each file must contain a one-paragraph description, prop expectations, and examples.
+* Components must accept `className`, `data-testid`, `...rest` for extensibility.
+  **When to apply:** Every UI component.
+  **Subcomponents to create automatically:** Loader variants, error states, skeletons.
+  **Debug checklist:** Console: `COMPONENT_REGISTRATION` with component size & coverage.
+
+---
+
+## 05 — Code Style & Comments (Premium polish)
+
+**Description:** Strict stylistic rules and thorough inline comments.
+**Detail:**
+
+* ESLint + Prettier + TypeScript strict mode enabled.
+* Add `/** ... */` docblocks for exported functions and components, including `@param`, `@returns`, `@example`.
+* For complex logic, provide an ASCII diagram or short algorithm explanation in comments.
+* Always include `TODO` and `FIXME` tags where expected changes may be required.
+  **When to apply:** Always.
+  **Debug checklist:** Lint errors should block CI; Console `LINT_OK`.
+
+---
+
+## 06 — Debugging & Logging (always developer-friendly)
+
+**Description:** Every non-trivial module should emit structured console logs for debugging.
+**Detail:**
+
+* Use a tiny logging wrapper `lib/logger.ts` that prefixes logs with the module name and supports `debug`, `info`, `warn`, `error`.
+* In production, logs are no-op or routed to a remote logging sink; but local dev should always show detailed logs.
+* Add `data-testid` attributes to important UI elements for tracing and e2e.
+* Example log format: `DEBUG [AuthForm]: VALIDATION_FAILED {field: 'email', error: 'invalid'}`.
+  **When to apply:** All features and complex components.
+  **Subcomponents:** `lib/logger.ts`, `useVerboseDebug(flag)` hook.
+  **Debug checklist:** Console: `LOGGER_INITIALIZED` and `LOG_LEVEL`.
+
+---
+
+## 07 — Accessibility (A11y first)
+
+**Description:** Semantic HTML and ARIA must be enforced.
+**Detail:**
+
+* Inputs must have labels; interactive elements must be keyboard-focusable.
+* Color contrast checks: aim for 4.5:1 for normal text; use `@axe-core/react` in storybook.
+* Provide `aria-*` attributes for live regions, modals, and complex widgets.
+  **When to apply:** Always.
+  **Subcomponents to create:** `AccessibleModal`, `SkipToContent` link, `FormField` wrapper with `label`.
+  **Debug checklist:** Run `axe` tests; Console: `A11Y_WARNINGS` with failing rules.
+
+---
+
+## 08 — Performance & Bundle Strategy
+
+**Description:** Keep bundle small and use code-splitting.
+**Detail:**
+
+* Lazy-load heavy components and 3rd-party libs (charts, maps) with `next/dynamic` or React `lazy`.
+* Keep critical CSS minimal; use Tailwind JIT responsibly.
+* Provide `priority` hints for LCP images, compress SVGs.
+  **When to apply:** Always for production builds.
+  **Subcomponents:** `Loadable` HOC to standardize lazy loading and skeleton placeholders.
+  **Debug checklist:** Console: `BUNDLE_ALERT` if > 200 KB for initial JS.
+
+---
+
+## 09 — Testing (Unit, Integration, E2E)
+
+**Description:** Tests are required for enterprise reliability.
+**Detail:**
+
+* Unit: Jest + React Testing Library for components.
+* Visual: Storybook with Chromatic or local snapshot scripts.
+* E2E: Playwright (or Cypress) with stable selectors (`data-testid`).
+* Add example test for each major component and page.
+  **When to apply:** Every feature merge.
+  **Subcomponents:** `__tests__` per feature with CI hooks.
+  **Debug checklist:** Console: `TESTS_RUN` with pass/fail counts.
+
+---
+
+## 10 — Storybook & Design QA
+
+**Description:** Every component must have a Storybook story covering states.
+**Detail:**
+
+* Stories must show normal, loading, error, empty states, and accessibility panel.
+* Integrate `@storybook/addon-a11y`, `controls`, and `docs`.
+  **When to apply:** For UI components.
+  **Subcomponents:** `stories/` adjacent to component.
+  **Debug checklist:** Console: `STORYBOOK_OK` with story count.
+
+---
+
+## 11 — Recipes & Templates (AI-friendly)
+
+**Description:** Pre-made high-quality templates for the AI to compose pages.
+**Detail:**
+
+* Each recipe must have: `meta.json` (title, description, tags), `structure.md` (layout composition), `variants/` (small, medium, large), and `preview.png`.
+* Recipes should be idempotent: running generator twice must not duplicate IDs or styles.
+  **When to apply:** When building pages from AI prompts.
+  **Subcomponents:** `RecipeIndex` that exposes `getRecipe(name)`.
+  **Debug checklist:** Console: `RECIPE_APPLIED` with recipe name & variant.
+
+---
+
+## 12 — API & Data Layer (Separation of concerns)
+
+**Description:** UI logic must be separated from data fetching and caching.
+**Detail:**
+
+* Use `lib/api-client.ts` for typed fetchers (with retry/backoff).
+* Use `react-query` or `swr` for caching and background refetching.
+* Keep components dumb: pass data via props; stateful logic in `hooks/`.
+  **When to apply:** All features interacting with backend.
+  **Subcomponents:** `hooks/useAuth`, `hooks/usePaginatedList`.
+  **Debug checklist:** Console: `API_CALL` logs with latency.
+
+---
+
+## 13 — Error Handling & Monitoring
+
+**Description:** Graceful error states and observable monitoring.
+**Detail:**
+
+* Show user-friendly error UIs for network and server errors.
+* Log errors to Sentry/Datadog with `userContext`, stack, and breadcrumbs.
+* Provide `ErrorBoundary` wrappers at route-level and component-level.
+  **When to apply:** Always.
+  **Subcomponents:** `ErrorBoundary`, `ErrorFallback`.
+  **Debug checklist:** Console: `ERROR_CAPTURED` with Sentry event ID.
+
+---
+
+## 14 — Debug Builds & Developer Tools (Premium developer experience)
+
+**Description:** Developer builds must be verbose and include tools.
+**Detail:**
+
+* Expose `__DEV__` flags that enable verbose logs and debug overlays.
+* Provide an in-app debug panel (toggleable) showing: token values, theme, current user, API health, last logs.
+* Provide `window.__APP_DEBUG__` helpers for quick manual inspection.
+  **When to apply:** Local development only.
+  **Subcomponents:** `DevPanel`, `LogViewer`.
+  **Debug checklist:** Console: `DEV_PANEL_AVAILABLE`.
+
+---
+
+## 15 — CI/CD & Release Notes
+
+**Description:** Enforce quality gates and automated release notes.
+**Detail:**
+
+* CI pipelines: `lint`, `type-check`, `unit-tests`, `storybook-build`, `e2e` gated before merge.
+* On successful main branch merge, build production artifact and create release notes from PR titles and `CHANGELOG.md` entries.
+  **When to apply:** Every PR and release.
+  **Subcomponents:** `ci/` scripts, `release-note-generator`.
+  **Debug checklist:** CI status badges in README.
+
+---
+
+## 16 — Naming Conventions & Exports
+
+**Description:** Predictable names, single point exports.
+**Detail:**
+
+* Files: `PascalCase` for components, `camelCase` for hooks, `kebab-case` for assets.
+* Barrel exports: `components/index.ts` re-exports; features expose `publicApi.ts` for cross-feature usage.
+  **When to apply:** Always.
+  **Subcomponents:** `index.ts` for each folder.
+  **Debug checklist:** Console: `EXPORTS_VALID`.
+
+---
+
+## 17 — Animation & Motion (framer-motion guidelines)
+
+**Description:** Subtle, accessible animations only.
+**Detail:**
+
+* Provide `motionVariants.ts` reusable variants for `fadeIn`, `slideUp`, `staggerList`.
+* Respect `prefers-reduced-motion` and disable motion accordingly.
+  **When to apply:** For interactive entries and micro-interactions.
+  **Subcomponents:** `AnimatedSection`, `AnimatedList`.
+  **Debug checklist:** Console: `MOTION_ENABLED` or `MOTION_REDUCED`.
+
+---
+
+## 18 — Theming & Brand Override Patterns
+
+**Description:** Allow brand overrides while preserving tokens.
+**Detail:**
+
+* `brand/` folder may contain `brand-tokens.json` that merges with base tokens via `mergeTokens()` at build time.
+* Never let brand tokens override critical accessibility colors without warnings.
+  **When to apply:** When building client-specific branded apps.
+  **Subcomponents:** `BrandProvider`.
+  **Debug checklist:** Console: `BRAND_MERGE_OK`.
+
+---
+
+## 19 — Upgrade & Deprecation Policy
+
+**Description:** Plan for component upgrades and deprecation.
+**Detail:**
+
+* Add `@deprecated` tags in component docblocks with recommended replacement.
+* Provide codemods for automated migrations.
+  **When to apply:** On any breaking change.
+  **Subcomponents:** `codemods/` scripts.
+  **Debug checklist:** Console: `DEPRECATION_WARNINGS` with list.
+
+---
+
+## 20 — Generator Safety & Idempotency
+
+**Description:** Generators must be safe to run multiple times.
+**Detail:**
+
+* Generated files must include header comments: `// GENERATED — DO NOT EDIT` or `// SAFE_TO_REGENERATE` with a stable ID.
+* When updating, ensure diffs are minimal and predictable.
+  **When to apply:** Any code generation (recipes, components).
+  **Subcomponents:** `generator/index.ts` with `--dry-run` option.
+  **Debug checklist:** Console: `GENERATOR_SAFE` with changed file list.
+
+---
+
+## Appendix A — Component Template (required header comment)
+
+> This file must be copied into every component as a starter template. Keep the top comment intact.
+
+```tsx
+/**
+ * Component: FancyButton
+ * Description: Primary button used across app. Wraps shadcn Button to standardize variants.
+ * Props:
+ *   - label: string - visible text
+ *   - onClick: (e) => void - click handler
+ * Usage:
+ *   <FancyButton label="Save" onClick={save} />
+ */
+
+import React from 'react';
+import { Button as ShadButton } from '@/components/ui/button';
+import logger from '@/lib/logger';
+
+export interface FancyButtonProps {
+  label: string;
+  disabled?: boolean;
+  'data-testid'?: string;
+}
+
+export const FancyButton: React.FC<FancyButtonProps> = ({ label, disabled, ...rest }) => {
+  logger.debug('FancyButton:render', { label, disabled });
+  return (
+    <ShadButton className="rounded-2xl shadow-md px-6 py-2" aria-disabled={disabled} {...rest}>
+      {label}
+    </ShadButton>
+  );
+};
+
+export default FancyButton;
+```
+
+---
+
+## Appendix B — Sample `logger.ts` (minimal)
+
+```ts
+// lib/logger.ts
+const PREFIX = '[APP]';
+const isDev = process.env.NODE_ENV !== 'production';
+
+const logger = {
+  debug: (...args: any[]) => { if (isDev) console.debug(PREFIX, ...args); },
+  info: (...args: any[]) => { console.info(PREFIX, ...args); },
+  warn: (...args: any[]) => { console.warn(PREFIX, ...args); },
+  error: (...args: any[]) => { console.error(PREFIX, ...args); },
+};
+
+export default logger;
+```
+
+---
+
+## Appendix C — Minimal `project.config.json` example
+
+```json
+{
+  "name": "my-ai-frontend",
+  "designSystemPath": "./design-system",
+  "recipesPath": "./recipes",
+  "tokenVersion": "1.0.0",
+  "preferShadcn": true
+}
+```
+
+---
+
+## Final notes for the Agent
+
+* **Decision strategy:** Agent MUST read rule Description first. If Description matches user intent — apply details. If not, skip rule silently.
+* **Priority:** Rules 00–05 are mandatory. 06–14 are high priority. 15–20 are operational/CI and should be applied when building for release.
+* **Polish:** Always prefer conservative, minimal, accessible, and documented solutions. When in doubt, favor more comments and a debug log.
+
+---
+
+*End of `rules.mdc` — Modify this file in `design-system/` and keep versioned. For edits, update `tokenVersion` in `project.config.json`.*

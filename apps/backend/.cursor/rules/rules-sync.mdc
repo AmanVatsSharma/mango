@@ -1,0 +1,25 @@
+---
+description: Rules sync — root is canonical for shared rules
+alwaysApply: true
+---
+# Rules sync (backend)
+
+**Canonical source:** Repo root `.cursor/rules/` is the single source of truth for shared rules.
+
+**Duplicated from root (update root first, then copy here if backend must stay self-contained):**
+- master.mdc
+- header.template.mdc
+- MODULE_DOC.mdc
+- error_handling.mdc
+- logger_setup.mdc
+- PR_CHECKLIST.mdc
+- preferences.mdc
+- project_rules.mdc
+- manual_actions.mdc
+- api_rules.mdc
+- uirules.mdc
+
+**Backend-specific (only in apps/backend/.cursor/rules/):**
+- module_template.mdc — Nest module scaffold pattern
+
+When changing any of the duplicated rules, edit the file in **repo root** `.cursor/rules/` first, then copy to `apps/backend/.cursor/rules/` if you need backend-only runs to see the same rules.

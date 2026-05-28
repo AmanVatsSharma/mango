@@ -1,0 +1,11 @@
+# Duplicate file-content baseline (relative to repository root).
+# Keep each duplicate group contiguous and separated by a blank line.
+
+docs/modules/common-errors/MODULE_DOC.md
+src/common/errors/MODULE_DOC.md
+
+docs/modules/rbac/MODULE_DOC.md
+lib/rbac/MODULE_DOC.md
+
+public/professional-trader-avatar.png
+types/database.types.ts

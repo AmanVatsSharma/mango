@@ -1,0 +1,63 @@
+/**
+ * File:        apps/frontend/project.json
+ * Module:      Nx project configuration for UI-only Frontend
+ * Purpose:     Defines @nx/next executor targets for build, dev, serve, lint, test
+ *              This frontend is UI-only — all backend calls go to apps/backend (NestJS)
+ *
+ * Author:      Mango Nx Workspace
+ * Last-updated: 2026-05-17
+ */
+
+{
+  "name": "frontend",
+  "$schema": "../../nx.json",
+  "sourceRoot": "apps/frontend",
+  "projectType": "application",
+  "tags": ["type:app", "scope:frontend", "layer:entrypoint"],
+  "targets": {
+    "dev": {
+      "executor": "@nx/next:dev",
+      "options": {
+        "port": 3000,
+        "keepPort": true
+      }
+    },
+    "build": {
+      "executor": "@nx/next:build",
+      "options": {
+        "filePath": "apps/frontend/next.config.mjs",
+        "outputPath": "dist/apps/frontend",
+        "keepPort": false
+      },
+      "outputs": ["{workspaceRoot}/.next"],
+      "dependsOn": ["^build"]
+    },
+    "serve": {
+      "executor": "@nx/next:serve",
+      "options": {
+        "port": 3000
+      }
+    },
+    "lint": {
+      "executor": "@nx/eslint:lint",
+      "options": {
+        "lintFilePatterns": ["apps/frontend/**/*.ts", "apps/frontend/**/*.tsx"]
+      }
+    },
+    "test": {
+      "executor": "@nx/jest:jest",
+      "outputs": ["{workspaceRoot}/coverage/apps/frontend"],
+      "options": {
+        "jestConfig": "apps/frontend/jest.config.cjs",
+        "passWithNoTests": true
+      }
+    },
+    "type-check": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "cd apps/frontend && npx tsc --noEmit",
+        "cwd": "{workspaceRoot}"
+      }
+    }
+  }
+}

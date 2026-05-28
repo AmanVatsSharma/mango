@@ -1,0 +1,81 @@
+---
+description:
+globs:
+alwaysApply: true
+---
+
+
+# =============================
+# 1. STRUCTURE & MODULES
+# =============================
+- Every feature lives in `src/modules/<feature-name>/`.
+- Each module must include:
+  - controllers/, services/, entities/, dtos/, tests/
+  - MODULE_DOC.md (purpose, flows, data)
+  - index.ts for re-exports
+  and each module can contain submodules
+- Cross-domain logic forbidden. Shared logic → `src/shared/`.
+- Dont allow to have to many modules in the main instead always have sub modules
+
+# =============================
+# 2. FILE NAMING
+# =============================
+- Use kebab-case filenames only.
+- Controllers: *.controller.ts
+- Services: *.service.ts
+- Entities: *.entity.ts
+- DTOs: *.dto.ts
+- Tests: *.spec.ts
+
+# =============================
+# 3. FILE HEADERS
+# =============================
+- All files must start with header (see header.template):
+  /**
+   * @file <filename>
+   * @module <module-name>
+   * @description <short description>
+   * @author BharatERP
+   * @created <date>
+   */
+
+# =============================
+# 4. LOGGING & ERROR HANDLING
+# =============================
+- Use Pino logger from src/shared/logger.ts
+- Never use console.log
+- Each request attaches requestId via middleware → log correlation
+- All errors must extend AppError (custom class with code+message)
+
+# =============================
+# 5. DTO & VALIDATION
+# =============================
+- All inputs must go through DTOs with class-validator decorators
+- No raw object params allowed in services or controllers
+- Zod schemas should be used in tests to verify DTO shape
+
+# =============================
+# 6. DATABASE RULES
+# =============================
+- Entities live in entities/ only
+- Relations must define cascade rules explicitly
+- Always create migrations for schema changes
+- UUID v4 default for all IDs (@PrimaryGeneratedColumn('uuid'))
+
+# =============================
+# 9. CURSOR AI USAGE
+# =============================
+- AI must respect folder/module structure
+- Instead of many modules, have sub modules
+- Always add file headers
+- Update MODULE_DOC.md on module edits
+- Follow strict module boundaries
+- Use Nest Cli to generate files instead of manually when possible
+- Afte every edit, log on changelog in docs
+
+# =============================
+# 10. DOCUMENTATION
+# =============================
+- Each module's MODULE_DOC.md synced into docs/
+- Root README.md only points to docs site
+- Use typedoc to auto-generate API docs

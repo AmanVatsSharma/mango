@@ -1,0 +1,7 @@
+{
+  "database": "dolt",
+  "backend": "dolt",
+  "dolt_mode": "embedded",
+  "dolt_database": "tradingpro_platform",
+  "project_id": "d8537acc-b90c-4ba9-b67f-a27cfcad2df9"
+}

@@ -1,0 +1,31 @@
+{
+  "name": "@mango/shared-utils",
+  "$schema": "../../nx.json",
+  "sourceRoot": "libs/shared/utils",
+  "projectType": "library",
+  "tags": ["type:lib", "scope:shared"],
+  "targets": {
+    "build": {
+      "executor": "@nx/js:tsc",
+      "options": {
+        "main": "libs/shared/utils/src/index.ts",
+        "outputPath": "dist/libs/shared/utils",
+        "tsConfig": "libs/shared/utils/tsconfig.lib.json"
+      }
+    },
+    "lint": {
+      "executor": "@nx/eslint:lint",
+      "options": {
+        "lintFilePatterns": ["libs/shared/utils/**/*.ts"]
+      }
+    },
+    "test": {
+      "executor": "@nx/jest:jest",
+      "outputs": ["{workspaceRoot}/coverage/libs/shared/utils"],
+      "options": {
+        "jestConfig": "libs/shared/utils/jest.config.ts",
+        "passWithNoTests": true
+      }
+    }
+  }
+}

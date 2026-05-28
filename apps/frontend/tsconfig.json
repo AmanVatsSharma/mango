@@ -1,0 +1,53 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "jsx": "preserve",
+    "incremental": true,
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
+    "strict": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": [
+        "./*"
+      ],
+      "next-auth/react": [
+        "./lib/next-auth-shim.ts"
+      ],
+      "next-auth": [
+        "./lib/next-auth-shim.ts"
+      ],
+      "next-auth/jwt": [
+        "./lib/next-auth-jwt-shim.ts"
+      ],
+      "@/auth": [
+        "./auth.ts"
+      ],
+      "@/lib/prisma": [
+        "./lib/prisma-client-shim.ts"
+      ],
+      "@prisma/client": [
+        "./lib/prisma-client-shim.ts"
+      ],
+      "@/lib/observability/logger": [
+        "./lib/observability/logger.ts"
+      ]
+    },
+    "allowJs": true,
+    "noEmit": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true
+  },
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
+}

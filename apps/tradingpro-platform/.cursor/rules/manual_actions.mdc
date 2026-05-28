@@ -1,0 +1,12 @@
+---
+alwaysApply: false
+---
+
+type: ApplyManually
+- @migrate-db -> run migration scripts after review
+- @audit-duplicates -> run duplicate-file checker & report
+- @mass-refactor -> run codemods only after explicit approval
+type: ApplyManually
+- @migrate-db -> run migration scripts after review
+- @audit-duplicates -> run duplicate-file checker & report
+- @mass-refactor -> run codemods only after explicit approval

@@ -1,0 +1,72 @@
+<h2>When an order gets rejected, what should happen?</h2>
+<p class="subtitle">Insufficient margin, market closed, exchange rejection — currently just a red toast for 7s. Which feels right?</p>
+
+<div class="options">
+  <div class="option" data-choice="inline-error" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Stay on Order Screen — Inline Error</h3>
+      <p>Order screen stays open. Error banner slides in under the header with the exact reason. User can fix the issue (adjust quantity, switch to limit) and retry without reopening the drawer.</p>
+      <div class="mockup" style="margin-top:0.75rem">
+        <div class="mockup-header">Order Screen — After Rejection</div>
+        <div class="mockup-body" style="background:#0a0a0a;padding:0;font-family:monospace;font-size:0.75rem">
+          <div style="background:#111;padding:0.6rem 0.75rem;border-bottom:1px solid #1a1a1a;display:flex;align-items:center;gap:0.5rem">
+            <span style="color:#888">←</span>
+            <span style="color:#fff;font-weight:700">RELIANCE</span>
+            <span style="background:#1a1a2e;color:#60a5fa;padding:0.1rem 0.4rem;border-radius:4px;font-size:0.65rem">NSE</span>
+            <span style="margin-left:auto;color:#fff">₹2,847.50</span>
+          </div>
+          <div style="background:#450a0a;border-left:3px solid #ef4444;padding:0.6rem 0.75rem;margin:0">
+            <div style="color:#fca5a5;font-weight:700;margin-bottom:0.2rem">⚠ Order Rejected</div>
+            <div style="color:#f87171;font-size:0.7rem">Insufficient margin — need ₹28,475, have ₹12,300</div>
+            <div style="margin-top:0.4rem;display:flex;gap:0.4rem">
+              <div style="background:#7f1d1d;color:#fca5a5;padding:0.2rem 0.5rem;border-radius:4px;font-size:0.65rem">Reduce Qty</div>
+              <div style="background:#7f1d1d;color:#fca5a5;padding:0.2rem 0.5rem;border-radius:4px;font-size:0.65rem">Try Smaller</div>
+            </div>
+          </div>
+          <div style="padding:0.75rem;color:#888">Qty: 10 → <span style="color:#f59e0b">try 4?</span></div>
+          <div style="padding:0.75rem;color:#888">Price: ₹2,847.50</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="red-card" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Red Bottom Card — Same as Success</h3>
+      <p>Closes the order screen (like success), but the persistent bottom card turns red with the rejection reason. Consistent with the B choice above — one card handles all outcomes.</p>
+      <div class="mockup" style="margin-top:0.75rem">
+        <div class="mockup-header">Back on Watchlist — Rejected</div>
+        <div class="mockup-body" style="background:#0a0a0a;padding:0;font-family:monospace;position:relative;min-height:120px">
+          <div style="padding:0.75rem;color:#888;font-size:0.75rem">RELIANCE ₹2847 ▲0.4%</div>
+          <div style="padding:0.75rem;color:#888;font-size:0.75rem;border-top:1px solid #1a1a1a">TCS ₹3421 ▼0.2%</div>
+          <div style="position:absolute;bottom:0;left:0;right:0;background:#1c0707;border-top:2px solid #ef4444;padding:0.75rem;display:flex;align-items:center;justify-content:space-between">
+            <div>
+              <div style="color:#f87171;font-size:0.75rem;font-weight:700">✗ BUY 10 RELIANCE — Rejected</div>
+              <div style="color:#888;font-size:0.65rem">Insufficient margin (need ₹28,475)</div>
+            </div>
+            <div style="color:#f87171;font-size:0.75rem">Retry ›</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="both" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>Both — Inline for Fixable Errors, Card for Others</h3>
+      <p>Smart routing: if the user can fix it right there (reduce qty, switch order type) → stay on screen with inline error + smart suggestion. If it's a hard rejection (market closed, risk limit) → red card on watchlist.</p>
+      <div class="mockup" style="margin-top:0.75rem">
+        <div class="mockup-header">Logic</div>
+        <div class="mockup-body" style="background:#0a0a0a;padding:0.75rem;font-size:0.7rem;color:#888">
+          <div style="margin-bottom:0.4rem"><span style="color:#f59e0b">Fixable →</span> stay on screen, smart suggestion</div>
+          <div style="margin-bottom:0.4rem"><span style="color:#ef4444">Hard reject →</span> red bottom card</div>
+          <div style="margin-bottom:0.4rem"><span style="color:#888">Fixable errors:</span> margin, price, qty</div>
+          <div><span style="color:#888">Hard errors:</span> market closed, risk limit, segment disabled</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

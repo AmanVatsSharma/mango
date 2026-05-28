@@ -1,0 +1,46 @@
+asyncapi: 3.0.0
+info:
+  title: Obsidian Realtime API
+  version: 1.0.0
+  description: Realtime streams (SSE/WS) for orders and positions
+servers:
+  dev:
+    host: localhost:3000
+    protocol: http
+    description: Dev server (SSE via HTTP)
+channels:
+  orders/stream:
+    address: /orders/stream
+    messages:
+      OrderEvent:
+        $ref: '#/components/messages/OrderEvent'
+  positions/stream:
+    address: /positions/stream
+    messages:
+      PositionEvent:
+        $ref: '#/components/messages/PositionEvent'
+components:
+  messages:
+    OrderEvent:
+      name: OrderEvent
+      payload:
+        type: object
+        properties:
+          type:
+            type: string
+            examples: ["ORDER_PLACED", "ORDER_FILLED", "ORDER_CANCELLED"]
+          data:
+            type: object
+            additionalProperties: true
+    PositionEvent:
+      name: PositionEvent
+      payload:
+        type: object
+        properties:
+          type:
+            type: string
+            examples: ["POSITION_UPDATED"]
+          data:
+            type: object
+            additionalProperties: true
+

@@ -1,0 +1,122 @@
+<h2>Full System Design — Your Decisions</h2>
+<p class="subtitle">Here's what we're building. Review each area and tell me if anything needs changing.</p>
+
+<div class="section">
+  <div class="label">Area 1 · Watchlist → Order Flow</div>
+  <div class="mockup">
+    <div class="mockup-header">3-mode drawer → quick or full order</div>
+    <div class="mockup-body" style="background:#0a0a0a;padding:0.75rem;font-family:monospace;font-size:0.78rem">
+      <div style="display:flex;gap:0.5rem;margin-bottom:0.75rem">
+        <div style="flex:1;background:#111;border-radius:6px;padding:0.5rem;text-align:center">
+          <div style="color:#888;font-size:0.65rem">1. PEEK (50%)</div>
+          <div style="color:#fff;margin-top:0.2rem">Stock header</div>
+          <div style="color:#22c55e;font-size:0.65rem;margin-top:0.3rem">→ Quick Order</div>
+        </div>
+        <div style="color:#888;display:flex;align-items:center">▶</div>
+        <div style="flex:1;background:#111;border-radius:6px;padding:0.5rem;text-align:center">
+          <div style="color:#888;font-size:0.65rem">2. EXPANDED</div>
+          <div style="color:#fff;margin-top:0.2rem">+ Depth/OHLC</div>
+          <div style="color:#60a5fa;font-size:0.65rem;margin-top:0.3rem">→ Full Form</div>
+        </div>
+        <div style="color:#888;display:flex;align-items:center">▶</div>
+        <div style="flex:1;background:#111;border-radius:6px;padding:0.5rem;text-align:center">
+          <div style="color:#888;font-size:0.65rem">3. ORDER</div>
+          <div style="color:#fff;margin-top:0.2rem">Full screen</div>
+          <div style="color:#f59e0b;font-size:0.65rem;margin-top:0.3rem">Advanced</div>
+        </div>
+      </div>
+      <div style="background:#0d2818;border:1px solid #22c55e;border-radius:8px;padding:0.5rem;font-size:0.7rem">
+        <div style="color:#22c55e;font-weight:700;margin-bottom:0.3rem">Quick Order (new) — from peek, 3 fields only</div>
+        <div style="color:#888">Qty chips (Max / ½ / 1lot) · Market toggle · Swipe to confirm</div>
+        <div style="color:#888;margin-top:0.2rem">Tap "Advanced" → promotes to full order screen</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="label">Area 2 · Live Price Feel</div>
+  <div class="mockup">
+    <div class="mockup-header">Flash & Fade + staleness dimming</div>
+    <div class="mockup-body" style="background:#0a0a0a;padding:0.75rem;font-family:monospace;font-size:0.78rem">
+      <div style="display:flex;gap:0.75rem">
+        <div style="flex:1">
+          <div style="color:#22c55e;font-weight:700;margin-bottom:0.2rem">✓ Uptick</div>
+          <div style="color:#888;font-size:0.7rem">BG flashes #14532d → transparent (400ms)</div>
+        </div>
+        <div style="flex:1">
+          <div style="color:#ef4444;font-weight:700;margin-bottom:0.2rem">✓ Downtick</div>
+          <div style="color:#888;font-size:0.7rem">BG flashes #450a0a → transparent (400ms)</div>
+        </div>
+      </div>
+      <div style="margin-top:0.6rem;background:#1c1000;border-radius:6px;padding:0.5rem;font-size:0.7rem">
+        <div style="color:#f59e0b;font-weight:700;margin-bottom:0.2rem">⚡ Feed stale (&gt;30s)</div>
+        <div style="color:#888">Row dims to 45% opacity · "stale" age shown · market order blocked</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="label">Area 3 · Order Status & Feedback</div>
+  <div class="mockup">
+    <div class="mockup-header">Persistent bottom card — all outcomes</div>
+    <div class="mockup-body" style="background:#0a0a0a;padding:0;font-family:monospace;font-size:0.78rem">
+      <div style="background:#0d2818;border-top:2px solid #22c55e;padding:0.65rem 0.75rem;display:flex;align-items:center;justify-content:space-between;margin-bottom:1px">
+        <div>
+          <div style="color:#22c55e;font-weight:700">BUY 10 RELIANCE · ⏳ Pending</div>
+          <div style="color:#888;font-size:0.65rem">₹28,475 · #4821A</div>
+        </div>
+        <div style="color:#22c55e;font-size:0.75rem">View ›</div>
+      </div>
+      <div style="background:#1c0707;border-top:2px solid #ef4444;padding:0.65rem 0.75rem;display:flex;align-items:center;justify-content:space-between">
+        <div>
+          <div style="color:#f87171;font-weight:700">✗ BUY 5 TCS — Rejected</div>
+          <div style="color:#888;font-size:0.65rem">Insufficient margin · Retry ›</div>
+        </div>
+        <div style="color:#888;font-size:0.75rem">✕</div>
+      </div>
+      <div style="padding:0.5rem;text-align:center;color:#888;font-size:0.65rem">Live status via WebSocket · auto-updates Pending → Executed</div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="label">Area 4 · Robustness & Edge Cases</div>
+  <div class="mockup">
+    <div class="mockup-header">Smart recovery stack</div>
+    <div class="mockup-body" style="background:#0a0a0a;padding:0.75rem;font-family:monospace;font-size:0.75rem">
+      <div style="display:flex;flex-direction:column;gap:0.4rem">
+        <div style="display:flex;gap:0.5rem;align-items:flex-start">
+          <span style="color:#22c55e">✓</span>
+          <span style="color:#888">WS drops → auto-reconnect every 3s + REST fallback every 15s</span>
+        </div>
+        <div style="display:flex;gap:0.5rem;align-items:flex-start">
+          <span style="color:#22c55e">✓</span>
+          <span style="color:#888">Feed stale &gt;30s → amber banner + market orders disabled</span>
+        </div>
+        <div style="display:flex;gap:0.5rem;align-items:flex-start">
+          <span style="color:#22c55e">✓</span>
+          <span style="color:#888">Market closed → per-venue message (CDS 17:00, MCX 23:55, etc.)</span>
+        </div>
+        <div style="display:flex;gap:0.5rem;align-items:flex-start">
+          <span style="color:#22c55e">✓</span>
+          <span style="color:#888">Network offline → order screen locked, clear "No connection" state</span>
+        </div>
+        <div style="display:flex;gap:0.5rem;align-items:flex-start">
+          <span style="color:#22c55e">✓</span>
+          <span style="color:#888">Rejection → red bottom card with exact reason + retry action</span>
+        </div>
+        <div style="display:flex;gap:0.5rem;align-items:flex-start">
+          <span style="color:#22c55e">✓</span>
+          <span style="color:#888">Reconnected → banner dismisses, "Live ✓" flash, prices resume ticking</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div style="margin-top:1.5rem;background:#0d1117;border:1px solid #30363d;border-radius:10px;padding:1rem">
+  <div style="color:#fff;font-weight:700;margin-bottom:0.4rem">Does this look right?</div>
+  <div style="color:#888;font-size:0.8rem">If yes — I'll write the spec doc and then the implementation plan. If anything needs changing, tell me in the terminal.</div>
+</div>

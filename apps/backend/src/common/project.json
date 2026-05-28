@@ -1,0 +1,15 @@
+{
+  "name": "backend-common",
+  "$schema": "../../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "apps/backend/src/common",
+  "projectType": "library",
+  "tags": ["type:lib", "scope:backend", "domain:common", "layer:infra"],
+  "targets": {
+    "lint": {
+      "executor": "@nx/eslint:lint",
+      "options": {
+        "lintFilePatterns": ["apps/backend/src/common/**/*.ts"]
+      }
+    }
+  }
+}

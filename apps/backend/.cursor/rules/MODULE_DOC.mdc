@@ -1,0 +1,44 @@
+---
+description: this provides template details for module doc
+alwaysApply: false
+---
+# Module: <module-name>
+
+
+**Short:** One-line summary.
+
+
+**Purpose:** Business intent (e.g. "Manage orders lifecycle: create, cancel, modify, match, settle").
+
+
+**Files:**
+- module.ts — Nest module
+- <module>.controller.ts — HTTP/WS controller
+- <module>.service.ts — Business logic
+- dto/ — request/response DTOs
+- entities/ — DB entities
+- repository/ — DB access patterns
+- MODULE_DOC.md — this file
+- __tests__/ — unit & integration tests
+
+
+**Flow diagram:** `flowcharts/<module>-flow.svg`
+
+
+**Dependencies:** list of internal modules & external services (e.g. market-data, risk, billing)
+
+
+**APIs:**
+- REST endpoints (method, path, brief purpose)
+- GraphQL operations (if any)
+
+
+**Env vars:**
+- <MODULE>_ENABLED=true
+- <MODULE>_SETTING=...
+
+
+**Tests:** coverage target & integration rules
+
+
+**Change-log:** (auto-updated by Cursor on edits)

@@ -1,0 +1,128 @@
+<h2>Trading Chart — Enterprise Upgrade Options</h2>
+<p class="subtitle">Current: lightweight-charts v5 with basic candles + volume + line mode. Which set of enterprise features do you want?</p>
+
+<div class="cards" style="grid-template-columns: 1fr;">
+
+  <div class="card" data-choice="A" onclick="toggleSelect(this)" style="cursor:pointer;">
+    <div class="card-image" style="background: linear-gradient(135deg,#0f172a,#1e293b); padding:18px; border-radius:8px; font-family:monospace;">
+      <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;">
+        <span style="background:#334155;color:#94a3b8;padding:3px 8px;border-radius:4px;font-size:11px;">1m</span>
+        <span style="background:#2563eb;color:#fff;padding:3px 8px;border-radius:4px;font-size:11px;">15m</span>
+        <span style="background:#334155;color:#94a3b8;padding:3px 8px;border-radius:4px;font-size:11px;">1H</span>
+        <span style="background:#334155;color:#94a3b8;padding:3px 8px;border-radius:4px;font-size:11px;">1D</span>
+        <span style="margin-left:auto;background:#334155;color:#94a3b8;padding:3px 8px;border-radius:4px;font-size:11px;">Candle ▾</span>
+      </div>
+      <svg width="100%" height="100" viewBox="0 0 400 100">
+        <defs><linearGradient id="ga" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#3b82f6" stop-opacity="0.3"/><stop offset="100%" stop-color="#3b82f6" stop-opacity="0"/></linearGradient></defs>
+        <!-- MA lines -->
+        <polyline points="0,70 50,60 100,55 150,48 200,52 250,45 300,40 350,38 400,35" fill="none" stroke="#f59e0b" stroke-width="1.5" opacity="0.8"/>
+        <polyline points="0,75 50,68 100,62 150,56 200,60 250,52 300,46 350,42 400,38" fill="none" stroke="#8b5cf6" stroke-width="1.5" opacity="0.8"/>
+        <!-- Candles -->
+        <rect x="20" y="62" width="8" height="16" fill="#22c55e" rx="1"/>
+        <line x1="24" y1="58" x2="24" y2="80" stroke="#22c55e" stroke-width="1.5"/>
+        <rect x="50" y="55" width="8" height="14" fill="#22c55e" rx="1"/>
+        <line x1="54" y1="50" x2="54" y2="72" stroke="#22c55e" stroke-width="1.5"/>
+        <rect x="80" y="58" width="8" height="18" fill="#ef4444" rx="1"/>
+        <line x1="84" y1="52" x2="84" y2="80" stroke="#ef4444" stroke-width="1.5"/>
+        <rect x="110" y="50" width="8" height="12" fill="#22c55e" rx="1"/>
+        <line x1="114" y1="44" x2="114" y2="65" stroke="#22c55e" stroke-width="1.5"/>
+        <rect x="140" y="44" width="8" height="15" fill="#22c55e" rx="1"/>
+        <line x1="144" y1="38" x2="144" y2="62" stroke="#22c55e" stroke-width="1.5"/>
+        <rect x="170" y="48" width="8" height="16" fill="#ef4444" rx="1"/>
+        <line x1="174" y1="42" x2="174" y2="68" stroke="#ef4444" stroke-width="1.5"/>
+        <!-- RSI sub-panel hint -->
+        <rect x="0" y="88" width="400" height="12" fill="#1e293b" rx="2"/>
+        <text x="5" y="97" fill="#64748b" font-size="8">RSI(14): 58.3</text>
+        <polyline points="60,95 100,93 150,90 200,92 250,89 300,88 350,90 400,91" fill="none" stroke="#3b82f6" stroke-width="1" opacity="0.8"/>
+      </svg>
+      <div style="display:flex;gap:12px;margin-top:8px;font-size:10px;color:#64748b;">
+        <span style="color:#f59e0b">● MA(9)</span>
+        <span style="color:#8b5cf6">● EMA(21)</span>
+        <span>● MACD</span>
+        <span>● RSI</span>
+        <span>● BB</span>
+        <span>● VWAP</span>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>Option A — Technical Indicators + Timeframes</h3>
+      <p>Upgrade existing lightweight-charts with: MA/EMA/MACD/RSI/Bollinger Bands/VWAP indicators, full timeframe selector (1m→1M), indicator panel below chart, legend overlay with live values. Fast, stays in-bundle.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="B" onclick="toggleSelect(this)" style="cursor:pointer;margin-top:16px;">
+    <div class="card-image" style="background: linear-gradient(135deg,#0f172a,#1e293b); padding:18px; border-radius:8px; font-family:monospace;">
+      <div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap;align-items:center;">
+        <span style="background:#334155;color:#94a3b8;padding:3px 8px;border-radius:4px;font-size:11px;">Candle ▾</span>
+        <span style="background:#334155;color:#94a3b8;padding:3px 8px;border-radius:4px;font-size:11px;">Indicators ＋</span>
+        <span style="background:#334155;color:#94a3b8;padding:3px 8px;border-radius:4px;font-size:11px;">📐 Draw</span>
+        <span style="background:#334155;color:#94a3b8;padding:3px 8px;border-radius:4px;font-size:11px;">⛶ Fullscreen</span>
+        <span style="background:#334155;color:#94a3b8;padding:3px 8px;border-radius:4px;font-size:11px;">📷 Save</span>
+      </div>
+      <div style="display:flex;gap:2px;height:100px;">
+        <!-- Sidebar drawing tools -->
+        <div style="display:flex;flex-direction:column;gap:4px;width:28px;">
+          <span style="background:#1e3a5f;color:#60a5fa;padding:4px;border-radius:4px;font-size:10px;text-align:center;">↗</span>
+          <span style="background:#1e3a5f;color:#60a5fa;padding:4px;border-radius:4px;font-size:10px;text-align:center;">—</span>
+          <span style="background:#1e3a5f;color:#60a5fa;padding:4px;border-radius:4px;font-size:10px;text-align:center;">⊡</span>
+          <span style="background:#1e3a5f;color:#60a5fa;padding:4px;border-radius:4px;font-size:10px;text-align:center;">∿</span>
+        </div>
+        <svg width="100%" height="100" viewBox="0 0 380 100">
+          <!-- Trend line drawn by user -->
+          <line x1="20" y1="80" x2="360" y2="25" stroke="#f59e0b" stroke-width="1.5" stroke-dasharray="4,2" opacity="0.8"/>
+          <!-- Horizontal level -->
+          <line x1="0" y1="45" x2="380" y2="45" stroke="#3b82f6" stroke-width="1" stroke-dasharray="3,3" opacity="0.7"/>
+          <text x="5" y="42" fill="#3b82f6" font-size="8">Support 48,250</text>
+          <!-- Candles -->
+          <rect x="10" y="70" width="7" height="18" fill="#22c55e" rx="1"/>
+          <rect x="30" y="65" width="7" height="14" fill="#22c55e" rx="1"/>
+          <rect x="50" y="68" width="7" height="18" fill="#ef4444" rx="1"/>
+          <rect x="70" y="58" width="7" height="12" fill="#22c55e" rx="1"/>
+          <rect x="90" y="52" width="7" height="14" fill="#22c55e" rx="1"/>
+          <rect x="110" y="55" width="7" height="16" fill="#ef4444" rx="1"/>
+          <rect x="130" y="48" width="7" height="12" fill="#22c55e" rx="1"/>
+          <rect x="150" y="42" width="7" height="14" fill="#22c55e" rx="1"/>
+          <rect x="170" y="45" width="7" height="16" fill="#ef4444" rx="1"/>
+          <rect x="190" y="38" width="7" height="12" fill="#22c55e" rx="1"/>
+          <!-- Fibonacci levels -->
+          <line x1="200" y1="35" x2="380" y2="35" stroke="#a855f7" stroke-width="0.8" opacity="0.6"/>
+          <text x="205" y="32" fill="#a855f7" font-size="7">Fib 0.618</text>
+        </svg>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>Option B — Drawing Tools + Indicators + Full Controls</h3>
+      <p>Everything in A, plus: trend lines, horizontal support/resistance, rectangle zones, Fibonacci retracements, text labels, screenshot/export, fullscreen mode. Full professional trader toolkit. Bigger build but stays in-bundle with lightweight-charts.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="C" onclick="toggleSelect(this)" style="cursor:pointer;margin-top:16px;">
+    <div class="card-image" style="background: linear-gradient(135deg,#0f172a,#1e293b); padding:18px; border-radius:8px; font-family:monospace;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+        <svg width="80" height="24" viewBox="0 0 80 24"><text x="0" y="18" fill="#2962ff" font-size="14" font-weight="bold">TradingView</text></svg>
+        <span style="color:#64748b;font-size:10px;">Advanced Charts Widget</span>
+      </div>
+      <div style="border:1px solid #334155;border-radius:6px;overflow:hidden;height:90px;position:relative;">
+        <div style="position:absolute;inset:0;background:linear-gradient(135deg,#131722,#1e2330);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:4px;">
+          <span style="color:#2962ff;font-size:20px;">📈</span>
+          <span style="color:#94a3b8;font-size:9px;">Full TradingView feature set:</span>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:center;">
+            <span style="background:#1a2744;color:#60a5fa;padding:2px 6px;border-radius:3px;font-size:8px;">100+ indicators</span>
+            <span style="background:#1a2744;color:#60a5fa;padding:2px 6px;border-radius:3px;font-size:8px;">Drawing tools</span>
+            <span style="background:#1a2744;color:#60a5fa;padding:2px 6px;border-radius:3px;font-size:8px;">Replay</span>
+            <span style="background:#1a2744;color:#60a5fa;padding:2px 6px;border-radius:3px;font-size:8px;">Alerts</span>
+            <span style="background:#1a2744;color:#60a5fa;padding:2px 6px;border-radius:3px;font-size:8px;">Multi-pane</span>
+          </div>
+          <span style="color:#ef4444;font-size:8px;margin-top:4px;">⚠ Requires TradingView API key + your data adaptor</span>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>Option C — TradingView Advanced Charts (iframe)</h3>
+      <p>Embed TradingView's own chart widget — 100+ indicators, full drawing toolkit, replay, multi-pane, alerts. Unlimited professional features. Requires a TradingView API key and wiring your live data feed to their UDF format. Separate service dependency.</p>
+    </div>
+  </div>
+
+</div>
+
+<p class="subtitle" style="margin-top:20px;">Click your preferred option above, or describe in the terminal what matters most.</p>

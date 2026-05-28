@@ -1,0 +1,15 @@
+{
+  "name": "backend-oms",
+  "$schema": "../../../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "apps/backend/src/modules/oms",
+  "projectType": "library",
+  "tags": ["type:lib", "scope:backend", "domain:oms", "layer:domain"],
+  "targets": {
+    "lint": {
+      "executor": "@nx/eslint:lint",
+      "options": {
+        "lintFilePatterns": ["apps/backend/src/modules/oms/**/*.ts"]
+      }
+    }
+  }
+}

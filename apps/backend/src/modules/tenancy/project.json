@@ -1,0 +1,15 @@
+{
+  "name": "backend-tenancy",
+  "$schema": "../../../../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "apps/backend/src/modules/tenancy",
+  "projectType": "library",
+  "tags": ["type:lib", "scope:backend", "domain:tenancy", "layer:domain"],
+  "targets": {
+    "lint": {
+      "executor": "@nx/eslint:lint",
+      "options": {
+        "lintFilePatterns": ["apps/backend/src/modules/tenancy/**/*.ts"]
+      }
+    }
+  }
+}

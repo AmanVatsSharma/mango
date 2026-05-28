@@ -1,0 +1,580 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+
+:root {
+  /* Numeric font for all price/P&L/quantity display (font-mono class resolves here).
+     Self-host Kohinoor Bangla via next/font/local to override --font-numeric properly;
+     the CSS name below activates it if the font is installed in the browser/OS. */
+  --font-numeric: 'Kohinoor Bangla', ui-monospace, monospace;
+
+  /* Premium light theme: subtle grey canvas and pure white cards */
+  --background: oklch(0.98 0 0); /* very light grey */
+  --foreground: oklch(0.25 0 0);
+  --card: oklch(1 0 0); /* pure white */
+  --card-foreground: oklch(0.25 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.3 0 0);
+  --primary: oklch(var(--brand-primary-light, 0.55 0.15 195));
+  --primary-foreground: oklch(1 0 0);
+  --secondary: oklch(var(--brand-secondary-light, 0.6 0.15 264));
+  --secondary-foreground: oklch(1 0 0);
+  --muted: oklch(0.97 0 0);
+  --muted-foreground: oklch(0.6 0 0);
+  --accent: oklch(var(--brand-accent-light, 0.6 0.15 264));
+  --accent-foreground: oklch(1 0 0);
+  --destructive: oklch(0.55 0.2 25);
+  --destructive-foreground: oklch(1 0 0);
+  --success: oklch(0.6 0.15 142);
+  --success-foreground: oklch(1 0 0);
+  --border: oklch(0.9 0 0); /* slightly darker than background */
+  --input: oklch(0.98 0 0);
+  --ring: oklch(var(--brand-ring-light, 0.55 0.15 195 / 0.5));
+  --chart-1: oklch(var(--brand-chart-1-light, 0.55 0.2 264));
+  --chart-2: oklch(var(--brand-chart-2-light, 0.6 0.2 35));
+  --chart-3: oklch(var(--brand-chart-3-light, 0.6 0.15 142));
+  --chart-4: oklch(var(--brand-chart-4-light, 0.6 0.2 350));
+  --chart-5: oklch(var(--brand-chart-5-light, 0.5 0.2 220));
+  --radius: 0.5rem;
+  --sidebar: oklch(1 0 0);
+  --sidebar-foreground: oklch(0.25 0 0);
+  --sidebar-primary: oklch(1 0 0);
+  --sidebar-primary-foreground: oklch(0.3 0 0);
+  --sidebar-accent: oklch(0.6 0.15 264);
+  --sidebar-accent-foreground: oklch(1 0 0);
+  --sidebar-border: oklch(0.9 0 0);
+  --sidebar-ring: oklch(0.55 0.15 195 / 0.5);
+  --desktop-sticky-primary-offset: 4.25rem;
+  --desktop-sticky-secondary-offset: 8.75rem;
+  --brand-cta-radius: 0.5rem;
+  --brand-card-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.07), 0 2px 4px -2px rgb(0 0 0 / 0.05);
+  --brand-card-shadow-hover: 0 10px 15px -3px rgb(0 0 0 / 0.08), 0 4px 6px -4px rgb(0 0 0 / 0.05);
+  --brand-gradient-primary-from: #06B6D4;
+  --brand-gradient-primary-to: #8B5CF6;
+  --brand-chat-primary: #25D366;
+  --brand-chat-primary-hover: #1FBE58;
+  /* Terminal surface scale — light theme */
+  --terminal-bg:         oklch(0.97 0 0);
+  --terminal-surface:    oklch(0.99 0 0);
+  --terminal-surface-hi: oklch(0.95 0 0);
+  --terminal-hover:      oklch(0.93 0 0);
+  --terminal-border:     oklch(0.88 0 0);
+  --terminal-text:       oklch(0.15 0 0);
+  --terminal-text-muted: oklch(0.50 0 0);
+  /* Bloomberg semantic extensions — light fallbacks */
+  --terminal-accent:       #0891B2;
+  --terminal-accent-dim:   rgba(8, 145, 178, 0.10);
+  --terminal-accent-border: rgba(8, 145, 178, 0.25);
+  --terminal-up:           #059669;
+  --terminal-dn:           #DC2626;
+  --terminal-up-dim:       rgba(5, 150, 105, 0.08);
+  --terminal-dn-dim:       rgba(220, 38, 38, 0.08);
+  --terminal-up-glow:      rgba(5, 150, 105, 0.20);
+  --terminal-dn-glow:      rgba(220, 38, 38, 0.20);
+  --terminal-glass:        rgba(245, 247, 250, 0.80);
+  --terminal-separator:    rgba(0, 0, 0, 0.06);
+}
+
+.dark {
+  /* Dark theme stays high contrast */
+  --background: oklch(0.08 0 0);
+  --foreground: oklch(0.95 0 0);
+  --card: oklch(0.12 0 0);
+  --card-foreground: oklch(0.95 0 0);
+  --popover: oklch(0.12 0 0);
+  --popover-foreground: oklch(0.95 0 0);
+  --primary: oklch(var(--brand-primary-dark, 0.65 0.15 195));
+  --primary-foreground: oklch(0.08 0 0);
+  --secondary: oklch(var(--brand-secondary-dark, 0.2 0 0));
+  --secondary-foreground: oklch(0.95 0 0);
+  --muted: oklch(0.2 0 0);
+  --muted-foreground: oklch(0.7 0 0);
+  --accent: oklch(var(--brand-accent-dark, 0.2 0 0));
+  --accent-foreground: oklch(0.95 0 0);
+  --destructive: oklch(0.6 0.2 25);
+  --destructive-foreground: oklch(1 0 0);
+  --success: oklch(0.65 0.15 142);
+  --success-foreground: oklch(0.08 0 0);
+  --border: oklch(0.2 0 0);
+  --input: oklch(0.2 0 0);
+  --ring: oklch(var(--brand-ring-dark, 0.65 0.15 195 / 0.5));
+  --chart-1: oklch(var(--brand-chart-1-dark, 0.6 0.2 264));
+  --chart-2: oklch(var(--brand-chart-2-dark, 0.7 0.17 35));
+  --chart-3: oklch(var(--brand-chart-3-dark, 0.65 0.15 142));
+  --chart-4: oklch(var(--brand-chart-4-dark, 0.7 0.2 350));
+  --chart-5: oklch(var(--brand-chart-5-dark, 0.6 0.2 220));
+  --sidebar: oklch(0.12 0 0);
+  --sidebar-foreground: oklch(0.95 0 0);
+  --sidebar-primary: oklch(0.65 0.15 195);
+  --sidebar-primary-foreground: oklch(0.08 0 0);
+  --sidebar-accent: oklch(0.2 0 0);
+  --sidebar-accent-foreground: oklch(0.95 0 0);
+  --sidebar-border: oklch(0.2 0 0);
+  --sidebar-ring: oklch(0.65 0.15 195 / 0.5);
+  /* Terminal surface scale — dark theme */
+  --terminal-bg:         oklch(0.08 0 0);
+  --terminal-surface:    oklch(0.11 0 0);
+  --terminal-surface-hi: oklch(0.14 0 0);
+  --terminal-hover:      oklch(0.17 0 0);
+  --terminal-border:     oklch(0.18 0 0);
+  --terminal-text:       oklch(0.95 0 0);
+  --terminal-text-muted: oklch(0.55 0 0);
+  /* Bloomberg-grade semantic extensions */
+  --terminal-accent:       #22D3EE;
+  --terminal-accent-dim:   rgba(34, 211, 238, 0.12);
+  --terminal-accent-border: rgba(34, 211, 238, 0.25);
+  --terminal-up:           #10D996;
+  --terminal-dn:           #FF3B5C;
+  --terminal-up-dim:       rgba(16, 217, 150, 0.10);
+  --terminal-dn-dim:       rgba(255, 59, 92, 0.10);
+  --terminal-up-glow:      rgba(16, 217, 150, 0.25);
+  --terminal-dn-glow:      rgba(255, 59, 92, 0.25);
+  --terminal-glass:        rgba(17, 20, 28, 0.65);
+  --terminal-separator:    rgba(255, 255, 255, 0.06);
+  --desktop-sticky-primary-offset: 4.25rem;
+  --desktop-sticky-secondary-offset: 8.75rem;
+  --brand-cta-radius: 0.5rem;
+  --brand-card-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.35), 0 2px 4px -2px rgb(0 0 0 / 0.3);
+  --brand-card-shadow-hover: 0 10px 15px -3px rgb(0 0 0 / 0.45), 0 4px 6px -4px rgb(0 0 0 / 0.35);
+}
+
+@theme inline {
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-numeric), ui-monospace, monospace;
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+@layer utilities {
+  .neon-border {
+    box-shadow: 0 0 0 1px color-mix(in oklab, var(--primary), transparent 70%),
+                0 0 12px 0 color-mix(in oklab, var(--primary), transparent 80%);
+  }
+  .glass-surface {
+    background-color: color-mix(in oklab, var(--card), transparent 30%);
+    backdrop-filter: blur(10px);
+    border: 1px solid oklch(var(--border) / 0.8);
+  }
+
+  /* Admin shell: clean premium card aesthetic from design system */
+  [data-admin-shell] .neon-border {
+    box-shadow: var(--brand-card-shadow);
+    transition: box-shadow 200ms cubic-bezier(0.16, 1, 0.3, 1),
+                transform   200ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  [data-admin-shell] .neon-border:hover {
+    box-shadow: var(--brand-card-shadow-hover);
+    transform: translateY(-2px);
+  }
+  [data-admin-shell] .glass-surface {
+    backdrop-filter: none;
+    background-color: var(--card);
+  }
+
+  .brand-card-premium {
+    box-shadow: var(--brand-card-shadow);
+    transition: box-shadow 200ms ease, transform 200ms ease;
+  }
+  .brand-card-premium:hover {
+    box-shadow: var(--brand-card-shadow-hover);
+    transform: translateY(-2px);
+  }
+  .brand-cta-primary {
+    border-radius: var(--brand-cta-radius);
+    background-color: var(--primary);
+    color: var(--primary-foreground);
+    box-shadow: 0 10px 18px -12px rgb(0 0 0 / 0.35);
+    transition: transform 200ms ease, box-shadow 200ms ease, background-color 200ms ease;
+  }
+  .brand-cta-primary:hover {
+    background-color: color-mix(in oklab, var(--primary), black 12%);
+    box-shadow: 0 14px 22px -14px rgb(0 0 0 / 0.4);
+    transform: translateY(-1px);
+  }
+  .brand-cta-secondary {
+    border-radius: var(--brand-cta-radius);
+    border: 1px solid color-mix(in oklab, white, transparent 40%);
+    background-color: color-mix(in oklab, white, transparent 88%);
+    color: oklch(0.95 0 0);
+    transition: background-color 200ms ease, color 200ms ease, transform 200ms ease;
+  }
+  .brand-cta-secondary:hover {
+    background-color: white;
+    color: oklch(0.25 0 0);
+    transform: translateY(-1px);
+  }
+
+  .brand-gradient-primary {
+    background-image: linear-gradient(to right, var(--brand-gradient-primary-from), var(--brand-gradient-primary-to));
+  }
+
+  .brand-gradient-primary-soft {
+    background-image: linear-gradient(to bottom right, color-mix(in oklab, var(--brand-gradient-primary-from), white 12%), color-mix(in oklab, var(--brand-gradient-primary-to), white 12%));
+  }
+
+  .brand-chat-surface {
+    background-color: var(--brand-chat-primary);
+  }
+
+  .brand-chat-surface:hover {
+    background-color: var(--brand-chat-primary-hover);
+  }
+
+  /* Semantic bridge for legacy cyan/purple utility hotspots during migration */
+  .from-cyan-400,
+  .from-cyan-500,
+  .from-blue-500,
+  .from-blue-600 {
+    --tw-gradient-from: var(--brand-gradient-primary-from) var(--tw-gradient-from-position) !important;
+    --tw-gradient-to: color-mix(in oklab, var(--brand-gradient-primary-from), transparent 0%) var(--tw-gradient-to-position) !important;
+  }
+  .from-cyan-400\/30,
+  .from-cyan-500\/20 {
+    --tw-gradient-from: color-mix(in oklab, var(--brand-gradient-primary-from), transparent 70%) var(--tw-gradient-from-position) !important;
+    --tw-gradient-to: color-mix(in oklab, var(--brand-gradient-primary-from), transparent 100%) var(--tw-gradient-to-position) !important;
+  }
+  .to-purple-500,
+  .to-purple-600,
+  .to-blue-600 {
+    --tw-gradient-to: var(--brand-gradient-primary-to) var(--tw-gradient-to-position) !important;
+  }
+  .to-purple-500\/20,
+  .to-purple-400\/30 {
+    --tw-gradient-to: color-mix(in oklab, var(--brand-gradient-primary-to), transparent 70%) var(--tw-gradient-to-position) !important;
+  }
+  .text-cyan-300,
+  .text-cyan-400,
+  .text-cyan-700,
+  .text-blue-500,
+  .text-blue-600 {
+    color: var(--brand-gradient-primary-from) !important;
+  }
+  .border-cyan-500\/30,
+  .ring-cyan-500\/50 {
+    border-color: color-mix(in oklab, var(--brand-gradient-primary-from), transparent 70%) !important;
+  }
+  .bg-cyan-500\/20,
+  .bg-cyan-400\/40 {
+    background-color: color-mix(in oklab, var(--brand-gradient-primary-from), transparent 80%) !important;
+  }
+  .hover\:bg-cyan-500\/10:hover {
+    background-color: color-mix(in oklab, var(--brand-gradient-primary-from), transparent 90%) !important;
+  }
+  .hover\:text-cyan-200:hover,
+  .hover\:text-cyan-300:hover {
+    color: color-mix(in oklab, var(--brand-gradient-primary-from), white 18%) !important;
+  }
+  .hover\:ring-cyan-400\/70:hover {
+    box-shadow: 0 0 0 2px color-mix(in oklab, var(--brand-gradient-primary-from), transparent 30%) !important;
+  }
+
+  /* Broad fallback remap to keep legacy blue/cyan utilities brand-driven */
+  [class*="from-cyan-"],
+  [class*="from-blue-"] {
+    --tw-gradient-from: var(--brand-gradient-primary-from) var(--tw-gradient-from-position) !important;
+    --tw-gradient-to: color-mix(in oklab, var(--brand-gradient-primary-from), transparent 0%) var(--tw-gradient-to-position) !important;
+  }
+  [class*="to-purple-"],
+  [class*="to-blue-"] {
+    --tw-gradient-to: var(--brand-gradient-primary-to) var(--tw-gradient-to-position) !important;
+  }
+  [class*="text-cyan-"],
+  [class*="text-blue-"] {
+    color: var(--brand-gradient-primary-from) !important;
+  }
+  [class*="border-cyan-"],
+  [class*="border-blue-"] {
+    border-color: color-mix(in oklab, var(--brand-gradient-primary-from), white 75%) !important;
+  }
+  [class*="ring-cyan-"],
+  [class*="ring-blue-"] {
+    --tw-ring-color: color-mix(in oklab, var(--brand-gradient-primary-from), transparent 30%) !important;
+  }
+  [class*="bg-cyan-"],
+  [class*="bg-blue-"] {
+    background-color: color-mix(in oklab, var(--brand-gradient-primary-from), white 84%) !important;
+  }
+
+  /* Backward-compatible aliases while migrating existing files */
+  .stocktrade-card-premium {
+    box-shadow: var(--brand-card-shadow);
+    transition: box-shadow 200ms ease, transform 200ms ease;
+  }
+  .stocktrade-card-premium:hover {
+    box-shadow: var(--brand-card-shadow-hover);
+    transform: translateY(-2px);
+  }
+  .stocktrade-cta-primary {
+    border-radius: var(--brand-cta-radius);
+    background-color: var(--primary);
+    color: var(--primary-foreground);
+    box-shadow: 0 10px 18px -12px rgb(0 0 0 / 0.35);
+    transition: transform 200ms ease, box-shadow 200ms ease, background-color 200ms ease;
+  }
+  .stocktrade-cta-primary:hover {
+    background-color: color-mix(in oklab, var(--primary), black 12%);
+    box-shadow: 0 14px 22px -14px rgb(0 0 0 / 0.4);
+    transform: translateY(-1px);
+  }
+  .stocktrade-cta-secondary {
+    border-radius: var(--brand-cta-radius);
+    border: 1px solid color-mix(in oklab, white, transparent 40%);
+    background-color: color-mix(in oklab, white, transparent 88%);
+    color: oklch(0.95 0 0);
+    transition: background-color 200ms ease, color 200ms ease, transform 200ms ease;
+  }
+  .stocktrade-cta-secondary:hover {
+    background-color: white;
+    color: oklch(0.25 0 0);
+    transform: translateY(-1px);
+  }
+
+  /* Professional Mini Scrollbar */
+  .scrollbar-mini::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+  
+  .scrollbar-mini::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  .scrollbar-mini::-webkit-scrollbar-thumb {
+    background: color-mix(in oklab, var(--muted-foreground), transparent 70%);
+    border-radius: 4px;
+  }
+  
+  .scrollbar-mini::-webkit-scrollbar-thumb:hover {
+    background: color-mix(in oklab, var(--muted-foreground), transparent 50%);
+  }
+
+  /* Hide scrollbar for Firefox but keep functionality if desired, 
+     or style it (Firefox support for thin scrollbars is limited to width and color) */
+  .scrollbar-mini {
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in oklab, var(--muted-foreground), transparent 70%) transparent;
+  }
+
+  /* Admin sidebar nav — thin primary-tinted scrollbar */
+  .scrollbar-admin-nav::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+
+  .scrollbar-admin-nav::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .scrollbar-admin-nav::-webkit-scrollbar-thumb {
+    background: color-mix(in oklab, var(--primary), transparent 50%);
+    border-radius: 4px;
+  }
+
+  .scrollbar-admin-nav::-webkit-scrollbar-thumb:hover {
+    background: color-mix(in oklab, var(--primary), transparent 30%);
+  }
+
+  .scrollbar-admin-nav {
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in oklab, var(--primary), transparent 40%) transparent;
+  }
+
+  /* Hide scrollbars while preserving scroll behavior */
+  .no-scrollbar::-webkit-scrollbar,
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  .no-scrollbar,
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .desktop-sticky-rail {
+    position: static;
+  }
+
+  .desktop-sticky-rail--priority {
+    z-index: auto;
+  }
+
+  .desktop-sticky-rail--secondary {
+    top: auto;
+  }
+
+  .desktop-sticky-rail--workspace {
+    top: auto;
+  }
+
+  @media (min-width: 1024px) {
+    .desktop-sticky-rail {
+      position: sticky;
+      top: var(--desktop-sticky-primary-offset);
+      z-index: 20;
+    }
+
+    .desktop-sticky-rail--priority {
+      z-index: 30;
+    }
+
+    .desktop-sticky-rail--secondary {
+      top: var(--desktop-sticky-secondary-offset);
+      z-index: 20;
+    }
+
+    .desktop-sticky-rail--workspace {
+      top: calc(var(--desktop-sticky-primary-offset) + 0.75rem);
+      z-index: 20;
+    }
+  }
+
+  /*
+   * Wave 2 perf utilities (mobile / low-end CPU).
+   *
+   * .perf-cv-list — apply to long list containers (>20 rows) so the browser skips
+   *   layout/paint work for off-screen rows. The contain-intrinsic-size is the
+   *   reservation height per row (default 56 px); override with inline style if
+   *   your row is taller. Don't put this on containers smaller than the viewport
+   *   — content-visibility:auto only helps when most of the content is off-screen.
+   *
+   * .perf-touch — touch-action:manipulation kills the 300 ms tap delay on
+   *   mobile. Use on every interactive element that isn't already a Radix slot.
+   *
+   * .perf-cv-card — reserves ~200 px per card and skips paint when off-screen.
+   *   Good for tab content, dashboard cards, and table rows.
+   */
+  .perf-cv-list {
+    content-visibility: auto;
+    contain-intrinsic-size: 56px;
+  }
+
+  .perf-cv-card {
+    content-visibility: auto;
+    contain-intrinsic-size: 200px;
+  }
+
+  .perf-touch {
+    touch-action: manipulation;
+  }
+
+  /* ── Bloomberg Terminal Utilities ──────────────────────────────────────── */
+
+  .terminal-glow-up {
+    box-shadow: 0 0 10px var(--terminal-up-glow, rgba(16,217,150,.25));
+  }
+  .terminal-glow-dn {
+    box-shadow: 0 0 10px var(--terminal-dn-glow, rgba(255,59,92,.25));
+  }
+  .terminal-text-glow-up {
+    text-shadow: 0 0 12px var(--terminal-up-glow, rgba(16,217,150,.5));
+  }
+  .terminal-text-glow-dn {
+    text-shadow: 0 0 12px var(--terminal-dn-glow, rgba(255,59,92,.5));
+  }
+  .terminal-glass-surface {
+    background: var(--terminal-glass, rgba(17,20,28,.65));
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--terminal-separator, rgba(255,255,255,.06));
+  }
+  .terminal-active-tab {
+    border-bottom: 2px solid var(--terminal-accent, #22D3EE);
+    color: var(--terminal-accent, #22D3EE);
+  }
+  .terminal-cell {
+    background: var(--terminal-bg);
+    border-radius: 6px;
+    border: 1px solid var(--terminal-separator, rgba(255,255,255,.06));
+  }
+  .terminal-cell-up {
+    box-shadow: inset 0 0 0 1px rgba(16,217,150,.15);
+  }
+  .terminal-cell-dn {
+    box-shadow: inset 0 0 0 1px rgba(255,59,92,.15);
+  }
+
+  /* Bloomberg-style tab trigger — active = bottom accent border, no bg box */
+  .terminal-tab-trigger {
+    color: var(--terminal-text-muted);
+  }
+  .terminal-tab-trigger[data-state="active"] {
+    color: var(--terminal-accent, #22D3EE);
+    border-bottom-color: var(--terminal-accent, #22D3EE) !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+  .terminal-tab-trigger:hover:not([data-state="active"]) {
+    color: var(--terminal-text);
+  }
+}
+
+/* Home tab ticker marquee — infinite horizontal scroll */
+@keyframes home-ticker {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+/* Price tick flash animations — used by WatchlistItemCard */
+@keyframes tickFlashUp {
+  0% { background-color: #14532d; }
+  100% { background-color: transparent; }
+}
+@keyframes tickFlashDown {
+  0% { background-color: #450a0a; }
+  100% { background-color: transparent; }
+}
+.tick-flash-up {
+  animation: tickFlashUp 400ms ease-out forwards;
+  border-radius: 4px;
+}
+.tick-flash-down {
+  animation: tickFlashDown 400ms ease-out forwards;
+  border-radius: 4px;
+}

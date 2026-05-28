@@ -1,0 +1,2487 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+//////////////////////////
+// Enums
+//////////////////////////
+enum Role {
+  USER
+  ADMIN
+  MODERATOR
+  SUPER_ADMIN
+}
+
+enum KycStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum KycAmlStatus {
+  PENDING
+  CLEAR
+  REVIEW
+  HIT
+}
+
+enum KycSuspiciousStatus {
+  NONE
+  REVIEW
+  ESCALATED
+  CLEARED
+}
+
+enum KycReviewAction {
+  ASSIGNED
+  UNASSIGNED
+  STATUS_UPDATED
+  AML_UPDATED
+  SUSPICIOUS_UPDATED
+  NOTE_ADDED
+}
+
+enum ClientCrmNoteVisibility {
+  TEAM
+  MANAGER_ONLY
+}
+
+enum ClientCrmTaskKind {
+  CALLBACK
+  FOLLOW_UP
+  DOCUMENT
+  OTHER
+}
+
+enum ClientCrmTaskStatus {
+  OPEN
+  IN_PROGRESS
+  DONE
+  CANCELLED
+}
+
+enum ClientCrmTaskPriority {
+  LOW
+  NORMAL
+  HIGH
+}
+
+enum ClientCrmTaskDisposition {
+  NO_ANSWER
+  CALLBACK_SCHEDULED
+  WRONG_NUMBER
+  SPOKE_FOLLOWUP
+  OTHER
+}
+
+enum AuthEventType {
+  REGISTRATION_ATTEMPT
+  REGISTRATION_SUCCESS
+  REGISTRATION_FAILED
+  LOGIN_ATTEMPT
+  LOGIN_SUCCESS
+  LOGIN_FAILED
+  OTP_SENT
+  OTP_VERIFIED
+  OTP_FAILED
+  OTP_RESEND
+  MPIN_SETUP_ATTEMPT
+  MPIN_SETUP_SUCCESS
+  MPIN_SETUP_FAILED
+  MPIN_VERIFY_ATTEMPT
+  MPIN_VERIFY_SUCCESS
+  MPIN_VERIFY_FAILED
+  MPIN_RESET_ATTEMPT
+  MPIN_RESET_SUCCESS
+  MPIN_RESET_FAILED
+  SESSION_CREATED
+  SESSION_EXPIRED
+  SESSION_INVALIDATED
+  PHONE_VERIFIED
+  KYC_SUBMITTED
+  KYC_APPROVED
+  KYC_REJECTED
+  SECURITY_VIOLATION
+  RATE_LIMIT_EXCEEDED
+  ACCOUNT_LOCKED
+  ACCOUNT_UNLOCKED
+  NETWORK_CLUSTER_ALERT
+  CONCURRENT_SESSION_REJECTED
+}
+
+enum AuthEventSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+/// Referral bonus payout lifecycle
+enum ReferralRewardStatus {
+  PENDING
+  ELIGIBLE
+  PAID
+  CANCELLED
+  FROZEN
+}
+
+enum UserSessionKind {
+  WEB_JWT
+  MOBILE_SESSION_AUTH
+  REGISTRATION_SIGHTING
+}
+
+enum SecurityIncidentType {
+  MULTI_USER_SAME_NETWORK
+  CONCURRENT_SESSIONS_EXCEEDED
+  SESSION_POLICY_BLOCK
+}
+
+enum SecurityIncidentStatus {
+  OPEN
+  ACKNOWLEDGED
+  FALSE_POSITIVE
+  CLOSED
+}
+
+enum AccountType {
+  LIVE
+  DEMO
+}
+
+enum OrderType {
+  MARKET
+  LIMIT
+}
+
+enum OrderSide {
+  BUY
+  SELL
+}
+
+enum OrderStatus {
+  PENDING
+  EXECUTED
+  CANCELLED
+}
+
+/// OPEN = normal entry; CLOSE = queued exit leg executed via worker (Option A single-queue model).
+enum OrderPurpose {
+  OPEN
+  CLOSE
+}
+
+enum TransactionType {
+  CREDIT
+  DEBIT
+}
+
+enum OptionType {
+  CE
+  PE
+  XX // Temporary: will be removed after data cleanup
+}
+
+enum LogLevel {
+  INFO
+  WARN
+  ERROR
+  DEBUG
+}
+
+enum LogCategory {
+  ORDER
+  POSITION
+  TRANSACTION
+  FUNDS
+  AUTH
+  SYSTEM
+  API
+}
+
+enum OtpPurpose {
+  LOGIN_VERIFICATION
+  MPIN_SETUP
+  MPIN_RESET
+  PHONE_VERIFICATION
+  TRANSACTION_AUTH
+}
+
+//////////////////////////
+// NextAuth Models
+//////////////////////////
+model Account {
+  id                String  @id @default(cuid())
+  userId            String  @map("user_id")
+  type              String
+  provider          String
+  providerAccountId String  @map("provider_account_id")
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String   @id @default(cuid())
+  email      String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+//////////////////////////
+// Core Models
+//////////////////////////
+model User {
+  id                       String               @id @default(uuid())
+  name                     String?
+  email                    String?              @unique
+  emailVerified            DateTime?            @map("email_verified")
+  password                 String?
+  image                    String?
+  phone                    String?              @unique
+  phoneVerified            DateTime?            @map("phone_verified")
+  mPin                     String? // Encrypted mPin for trading
+  bio                      String?
+  role                     Role                 @default(USER)
+  isActive                 Boolean              @default(true)
+  /// Admin suspension (freeze); distinct from isActive (deactivated) and from eligibility policy tags.
+  suspendedAt              DateTime?            @map("suspended_at")
+  suspensionReason         String?              @map("suspension_reason") @db.VarChar(512)
+  suspendedById            String?              @map("suspended_by_id")
+  suspendedBy              User?                @relation("UserSuspensionActor", fields: [suspendedById], references: [id], onDelete: SetNull)
+  usersSuspendedByThisUser User[]               @relation("UserSuspensionActor")
+  requireOtpOnLogin        Boolean              @default(true) @map("require_otp_on_login")
+  kyc                      KYC?
+  tradingAccount           TradingAccount?
+  accounts                 Account[] // NextAuth relation
+  sessions                 Session[] // NextAuth relation
+  createdAt                DateTime             @default(now())
+  updatedAt                DateTime             @default(now()) @updatedAt
+  clientId                 String?              @unique @map("client_id")
+  PasswordResetToken       PasswordResetToken[]
+  Watchlist                Watchlist[]
+  OtpToken                 OtpToken[]
+  SessionAuth              SessionAuth[]
+  AuthEvents               AuthEvent[]
+
+  // Console-specific relations
+  bankAccounts BankAccount[]
+  deposits     Deposit[]
+  withdrawals  Withdrawal[]
+  userProfile  UserProfile?
+
+  // Relationship Manager (RM) self-relation
+  managedById  String?
+  managedBy    User?   @relation("UserRM", fields: [managedById], references: [id], onDelete: SetNull)
+  managedUsers User[]  @relation("UserRM")
+
+  // Referrals created by this user (typically admins)
+  referralLinks ReferralLink[]
+
+  // Owned scoped settings (per-admin/RM)
+  ownedSettings SystemSettings[] @relation("UserOwnedSettings")
+
+  // Enterprise features relations
+  riskLimit            RiskLimit?
+  riskAlerts           RiskAlert[]
+  resolvedAlerts       RiskAlert[]    @relation("ResolvedAlerts")
+  createdNotifications Notification[] @relation("CreatedNotifications")
+  kycReviews           KycReviewLog[] @relation("KycReviewer")
+  assignedKycs         KYC[]          @relation("KycAssignedTo")
+
+  /// Optional client-facing RM contact overrides (when this user is an RM); null keys fall through to canonical User fields.
+  rmPublicContact Json? @map("rm_public_contact")
+
+  userSessionRecords              UserSessionRecord[]
+  resolvedSecurityIncidents       SecurityIncident[]               @relation("SecurityIncidentResolvedBy")
+  sessionSecurityStepUpChallenges SessionSecurityStepUpChallenge[]
+  rmAssignmentRequests            RmAssignmentRequest[]            @relation("RmAssignmentRequestUser")
+  resolvedRmAssignmentRequests    RmAssignmentRequest[]            @relation("RmAssignmentRequestResolvedBy")
+
+  /// User who referred this account (denormalized from ReferralAttribution for fast admin queries).
+  referredByUserId String? @map("referred_by_user_id")
+  referredBy       User?   @relation("UserReferredBy", fields: [referredByUserId], references: [id], onDelete: SetNull)
+  referredUsers    User[]  @relation("UserReferredBy")
+
+  referralAttributionsAsReferrer ReferralAttribution[]   @relation("AttributionReferrer")
+  referralAttributionAsReferee   ReferralAttribution?    @relation("AttributionReferee")
+  referralRuleSetsCreated        ReferralRuleSet[]       @relation("ReferralRuleSetCreator")
+  referralRewardsAsBeneficiary   ReferralReward[]        @relation("ReferralRewardBeneficiary")
+  referralUserPreference         ReferralUserPreference?
+
+  clientCrmNotesAsSubject ClientCrmNote[] @relation("ClientCrmNoteSubject")
+  clientCrmNotesAuthored  ClientCrmNote[] @relation("ClientCrmNoteAuthor")
+  clientCrmTasksAsClient  ClientCrmTask[] @relation("ClientCrmTaskSubject")
+  clientCrmTasksCreated   ClientCrmTask[] @relation("ClientCrmTaskCreator")
+  clientCrmTasksCompleted ClientCrmTask[] @relation("ClientCrmTaskCompleter")
+
+  // Segments & Policies
+  segmentMemberships UserSegmentMember[]
+  createdSegments    UserSegment[]       @relation("UserSegmentCreator")
+  createdPolicies    TradingPolicy[]     @relation("TradingPolicyCreator")
+
+  // Positions closed by this user (admin or retail)
+  closedPositions Position[] @relation("PositionClosedBy")
+
+  // Market-control personal override (Phase 2)
+  marketControlOverride UserMarketControlOverride?
+
+  // Risk audit trail
+  riskAuditTargetEvents   RiskAuditEvent[] @relation("RiskAuditTarget")
+  riskAuditOperatorEvents RiskAuditEvent[] @relation("RiskAuditOperator")
+
+  // Phase 9 — Winner Mitigation (B-book counterparty defence)
+  winnerControl                 ClientWinnerControl?
+  winnerControlsUpdated         ClientWinnerControl[]        @relation("WinnerControlUpdater")
+  winnerControlHistoryTriggered ClientWinnerControlHistory[] @relation("WinnerControlTrigger")
+  tradeAdjustmentsPerformed     TradeAdjustmentLog[]         @relation("TradeAdjustmentPerformer")
+  tradeAdjustmentsTargeted      TradeAdjustmentLog[]         @relation("TradeAdjustmentTarget")
+
+  // Phase 10 — Bonus / Credit / Promo
+  bonusGrantsAsBeneficiary BonusGrant[] @relation("BonusGrantBeneficiary")
+  bonusGrantsIssued        BonusGrant[] @relation("BonusGrantIssuer")
+  bonusRulesCreated        BonusRule[]  @relation("BonusRuleCreator")
+  promoCodesCreated        PromoCode[]  @relation("PromoCodeCreator")
+
+  // Phase 11 — Affiliate / IB program.
+  // INVARIANT: these relations are ONLY for cascade behaviour + admin queries on the affiliate
+  // module. They MUST NOT be pulled into trader-side RBAC / scoping queries (no `User.affiliateId`
+  // back-edge on hot paths). Affiliate auth is its own surface (/api/affiliate/auth) and
+  // affiliate identity is the `Affiliate` table — NOT the `User` enum.
+  linkedAffiliate              Affiliate?             @relation("AffiliateLinkedUser")
+  affiliateAttribution         AffiliateAttribution?  @relation("AffiliateAttributionClient")
+  affiliateCommissionsAsSource AffiliateCommission[]  @relation("AffiliateCommissionSourceUser")
+  affiliatesCreated            Affiliate[]            @relation("AffiliateCreator")
+  affiliatesUpdated            Affiliate[]            @relation("AffiliateUpdater")
+  affiliateAttributionsManual  AffiliateAttribution[] @relation("AffiliateAttributionAdmin")
+  affiliatePayoutsApproved     AffiliatePayout[]      @relation("AffiliatePayoutApprover")
+  affiliatePayoutsCreated      AffiliatePayout[]      @relation("AffiliatePayoutCreator")
+
+  // Phase 12 — Communications engine.
+  // INVARIANT: trader-side code MUST NOT pull `commsMessages` for a SELECT * on the user (the
+  // table is high-volume; always paginate via the comms feed query). Consent is one row per
+  // channel — see CommsConsent.@@unique([userId, channel]).
+  commsConsents         CommsConsent[]       @relation("CommsConsentUser")
+  commsMessages         CommsMessage[]       @relation("CommsMessageUser")
+  campaignEnrollments   CampaignEnrollment[] @relation("CampaignEnrollmentUser")
+  commsTemplatesCreated CommsTemplate[]      @relation("CommsTemplateCreator")
+  commsCampaignsCreated CommsCampaign[]      @relation("CommsCampaignCreator")
+
+  // Phase 13a — Withdrawal risk engine.
+  // INVARIANT: rule authorship is admin-only metadata. Risk-score *evaluation* runs against
+  // a snapshot of the rule set at evaluation time (`Withdrawal.holdRuleKeys`) — not by joining
+  // these back-edges. The relations exist for "who last changed this rule" UX only.
+  withdrawalRiskRulesCreated WithdrawalRiskRule[] @relation("WithdrawalRiskRuleCreator")
+  withdrawalRiskRulesUpdated WithdrawalRiskRule[] @relation("WithdrawalRiskRuleUpdater")
+
+  // Phase 13b — Internal Surveillance.
+  // Subject side: alerts about THIS user. Admin side: alerts assigned to / dismissed by THIS user.
+  // Rule authorship mirrors Phase 13a (createdBy / updatedBy on SurveillanceRule).
+  surveillanceAlertsAbout     HouseSurveillanceAlert[] @relation("SurveillanceAlertSubject")
+  surveillanceAlertsAssigned  HouseSurveillanceAlert[] @relation("SurveillanceAlertAssignee")
+  surveillanceAlertsDismissed HouseSurveillanceAlert[] @relation("SurveillanceAlertDismisser")
+  surveillanceRulesCreated    SurveillanceRule[]       @relation("SurveillanceRuleCreator")
+  surveillanceRulesUpdated    SurveillanceRule[]       @relation("SurveillanceRuleUpdater")
+
+  // Phase 14 — Push notifications (mobile)
+  pushDevices PushDevice[]
+
+  // Phase 15 — Homepage configuration (admin)
+  homePageConfigsUpdated HomePageConfig[] @relation("HomePageConfigUpdater")
+
+  @@index([managedById])
+  @@index([suspendedById])
+  @@index([referredByUserId])
+  @@map("users")
+}
+
+model ClientCrmNote {
+  id          String                  @id @default(uuid())
+  userId      String                  @map("user_id")
+  user        User                    @relation("ClientCrmNoteSubject", fields: [userId], references: [id], onDelete: Cascade)
+  body        String                  @db.Text
+  isPinned    Boolean                 @default(false) @map("is_pinned")
+  visibility  ClientCrmNoteVisibility @default(TEAM) @map("visibility")
+  createdById String                  @map("created_by_id")
+  createdBy   User                    @relation("ClientCrmNoteAuthor", fields: [createdById], references: [id], onDelete: Restrict)
+  createdAt   DateTime                @default(now()) @map("created_at")
+  updatedAt   DateTime                @updatedAt @map("updated_at")
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@map("client_crm_notes")
+}
+
+model ClientCrmTask {
+  id            String                    @id @default(uuid())
+  userId        String                    @map("user_id")
+  user          User                      @relation("ClientCrmTaskSubject", fields: [userId], references: [id], onDelete: Cascade)
+  title         String                    @db.VarChar(512)
+  description   String?                   @db.Text
+  kind          ClientCrmTaskKind
+  status        ClientCrmTaskStatus       @default(OPEN)
+  priority      ClientCrmTaskPriority     @default(NORMAL)
+  dueAt         DateTime?                 @map("due_at")
+  snoozeCount   Int                       @default(0) @map("snooze_count")
+  disposition   ClientCrmTaskDisposition? @map("disposition")
+  outcomeNote   String?                   @map("outcome_note") @db.Text
+  createdById   String                    @map("created_by_id")
+  createdBy     User                      @relation("ClientCrmTaskCreator", fields: [createdById], references: [id], onDelete: Restrict)
+  completedById String?                   @map("completed_by_id")
+  completedBy   User?                     @relation("ClientCrmTaskCompleter", fields: [completedById], references: [id], onDelete: SetNull)
+  completedAt   DateTime?                 @map("completed_at")
+  createdAt     DateTime                  @default(now()) @map("created_at")
+  updatedAt     DateTime                  @updatedAt @map("updated_at")
+
+  @@index([userId, status, dueAt])
+  @@index([userId, dueAt])
+  @@map("client_crm_tasks")
+}
+
+model KYC {
+  id               String              @id @default(uuid())
+  userId           String              @unique
+  user             User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  aadhaarNumber    String
+  panNumber        String
+  bankProofUrl     String
+  bankProofKey     String?
+  status           KycStatus           @default(PENDING)
+  assignedToId     String?             @map("assigned_to_id")
+  assignedTo       User?               @relation("KycAssignedTo", fields: [assignedToId], references: [id], onDelete: SetNull)
+  assignedAt       DateTime?           @map("assigned_at")
+  slaDueAt         DateTime?           @map("sla_due_at")
+  slaBreachedAt    DateTime?           @map("sla_breached_at")
+  amlStatus        KycAmlStatus        @default(PENDING) @map("aml_status")
+  amlFlags         String[]            @default([]) @map("aml_flags")
+  suspiciousStatus KycSuspiciousStatus @default(NONE) @map("suspicious_status")
+  submittedAt      DateTime            @default(now())
+  approvedAt       DateTime?
+  updatedAt        DateTime            @updatedAt
+  reviewLogs       KycReviewLog[]
+
+  @@index([status])
+  @@index([assignedToId])
+  @@index([slaDueAt])
+  @@index([amlStatus])
+  @@index([suspiciousStatus])
+  @@map("kyc")
+}
+
+model KycReviewLog {
+  id         String          @id @default(uuid())
+  kycId      String          @map("kyc_id")
+  kyc        KYC             @relation(fields: [kycId], references: [id], onDelete: Cascade)
+  reviewerId String?         @map("reviewer_id")
+  reviewer   User?           @relation("KycReviewer", fields: [reviewerId], references: [id], onDelete: SetNull)
+  action     KycReviewAction
+  note       String?
+  metadata   Json?
+  createdAt  DateTime        @default(now()) @map("created_at")
+
+  @@index([kycId])
+  @@index([reviewerId])
+  @@index([action])
+  @@index([createdAt])
+  @@map("kyc_review_logs")
+}
+
+model PasswordResetToken {
+  id      String   @id @default(cuid())
+  email   String
+  token   String   @unique
+  expires DateTime
+  userId  String
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([email, token])
+}
+
+model Stock {
+  id            String   @id @default(cuid())
+  instrumentId  String   @unique
+  symbol        String
+  exchange      String
+  ticker        String
+  name          String
+  segment       String // NSE, NFO
+  ltp           Float    @default(0)
+  open          Float    @default(0)
+  high          Float    @default(0)
+  low           Float    @default(0)
+  close         Float    @default(0)
+  volume        Int      @default(0)
+  change        Float    @default(0)
+  changePercent Float    @default(0)
+  sector        String?
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @default(now()) @updatedAt()
+
+  // F&O specific fields
+  strikePrice Decimal?    @db.Decimal(10, 2) // Only for options
+  optionType  OptionType? // CE/PE, only for options
+  expiry      DateTime? // Only for F&O
+  lot_size    Float?
+
+  // Instrument token from market data API
+  token Int? @unique
+
+  // Provider-agnostic UIR id from milli-search — used as quote map key (gateway emits uirId on every tick)
+  uirId           Int?
+  // Provider-agnostic canonical symbol e.g. "NSE:RELIANCE" — used for WS { symbols: [...] } subscribe
+  canonicalSymbol String?
+
+  // watchlistItems WatchlistItem[]
+  orders    Order[]
+  positions Position[]
+
+  @@index([token])
+}
+
+model Watchlist {
+  id          String   @id @default(uuid())
+  userId      String
+  name        String   @default("My Watchlist")
+  description String?
+  color       String?  @default("#3B82F6") // Hex color for watchlist theme
+  isDefault   Boolean  @default(false) // Mark default watchlist
+  isPrivate   Boolean  @default(false) // Private vs public watchlist
+  sortOrder   Int      @default(0) // Custom sort order
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now()) @updatedAt
+
+  user  User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items WatchlistItem[]
+
+  @@unique([userId, name])
+  @@index([userId, sortOrder])
+}
+
+model WatchlistItem {
+  id          String   @id @default(cuid())
+  watchlistId String
+  stockId     String? // Optional, kept for backward compatibility
+  notes       String? // User notes for this stock
+  alertPrice  Decimal? @db.Decimal(10, 2) // Price alert threshold
+  alertType   String?  @default("ABOVE") // ABOVE, BELOW, BOTH
+  sortOrder   Int      @default(0) // Custom sort order within watchlist
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now()) @updatedAt
+
+  // Instrument token from market data API (unique identifier)
+  token Int?
+
+  // Instrument data stored directly in WatchlistItem (no Stock dependency)
+  symbol   String? @default("UNKNOWN") // Temporarily nullable for migration
+  exchange String? @default("NSE") // Temporarily nullable for migration
+  segment  String? @default("NSE") // Temporarily nullable for migration
+  name     String? @default("Unknown") // Temporarily nullable for migration
+  ltp      Float   @default(0)
+  close    Float   @default(0)
+
+  // Provider-agnostic UIR id from milli-search — used as quote map key (gateway emits uirId on every tick)
+  uirId           Int?
+  // Provider-agnostic canonical symbol e.g. "NSE:RELIANCE" — used for WS { symbols: [...] } subscribe
+  canonicalSymbol String?
+
+  // F&O specific fields
+  strikePrice Decimal?    @db.Decimal(10, 2) // Only for options
+  optionType  OptionType? // CE/PE, only for options
+  expiry      DateTime? // Only for F&O
+  lotSize     Float?
+
+  // Instrument classification — EQ | FUT | CE | PE | IDX | ETF | SPOT | …
+  // Persisted so badges / order routing can resolve the asset class without re-parsing
+  // canonicalSymbol or guessing from segment suffixes. Nullable so existing rows continue
+  // to work — the watchlist UI falls back to canonicalSymbol-based recovery when null.
+  instrumentType String?
+  logo_url       String?
+
+  watchlist Watchlist @relation(fields: [watchlistId], references: [id], onDelete: Cascade)
+  // stock     Stock     @relation(fields: [stockId], references: [id], onDelete: Cascade) // Commented out - no longer used
+
+  @@unique([watchlistId, token])
+  @@index([watchlistId, sortOrder])
+  @@index([token])
+}
+
+model TradingAccount {
+  id              String      @id @default(uuid())
+  userId          String      @unique
+  accountType     AccountType @default(LIVE)
+  user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  balance         Int         @default(0)
+  availableMargin Int         @default(0)
+  usedMargin      Int         @default(0)
+  /// Phase 10 — non-withdrawable credit balance from bonuses. Stored in rupees (Int) to
+  /// match existing balance columns on this table. Burndown via lib/bonus/burndown.ts on
+  /// settled trades; advances turnoverProgress on linked BonusGrant rows.
+  creditBalance   Int         @default(0) @map("credit_balance")
+  clientId        String?     @unique @map("client_id")
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @default(now()) @updatedAt
+
+  orders      Order[]
+  positions   Position[]
+  trades      Transaction[]
+  deposits    Deposit[]
+  withdrawals Withdrawal[]
+
+  @@unique([userId, accountType])
+  @@index([accountType])
+  @@map("trading_accounts")
+}
+
+model Order {
+  id               String       @id @default(uuid())
+  tradingAccountId String
+  symbol           String
+  quantity         Int
+  orderType        OrderType
+  orderSide        OrderSide
+  price            Decimal?     @db.Decimal(10, 2)
+  filledQuantity   Int          @default(0)
+  averagePrice     Decimal?     @db.Decimal(10, 2)
+  productType      String       @default("MIS")
+  status           OrderStatus  @default(PENDING)
+  orderPurpose     OrderPurpose @default(OPEN)
+  closeMetadata    Json?
+  failureCode      String?
+  failureReason    String?
+  /// Rupees (integer) reserved at placement; released on cancel or moved at fill.
+  blockedMargin    Int          @default(0)
+  /// Rupees charged at placement (brokerage/taxes); refunded on cancel when order never executes.
+  placementCharges Int          @default(0)
+  /// Snapshot of EffectiveControls captured at placement time — spread %, slippage %, tilt bias, user-group, symbol override. Used by the worker to replay the same market-control rules at fill time.
+  executionContext Json?
+  createdAt        DateTime     @default(now())
+  executedAt       DateTime?
+
+  tradingAccount TradingAccount @relation(fields: [tradingAccountId], references: [id], onDelete: Cascade)
+  Stock          Stock?         @relation(fields: [stockId], references: [id])
+  stockId        String?
+  Position       Position?      @relation(fields: [positionId], references: [id])
+  positionId     String?
+  // Reverse relation to transactions linked to this order
+  transactions   Transaction[]
+
+  @@index([status, orderPurpose, createdAt])
+  @@map("orders")
+}
+
+model Transaction {
+  id               String          @id @default(uuid())
+  tradingAccountId String
+  amount           Decimal         @db.Decimal(18, 2)
+  type             TransactionType
+  description      String?
+  createdAt        DateTime        @default(now())
+
+  tradingAccount TradingAccount @relation(fields: [tradingAccountId], references: [id], onDelete: Cascade)
+  // Link transactions to specific orders/positions when applicable
+  orderId        String?
+  order          Order?         @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  positionId     String?
+  position       Position?      @relation(fields: [positionId], references: [id], onDelete: SetNull)
+
+  // Phase 13b — surveillance back-edges (e.g. SUSPICIOUS_WINNER references the closing TXN).
+  surveillanceAlerts HouseSurveillanceAlert[] @relation("SurveillanceAlertTransaction")
+
+  @@index([orderId])
+  @@index([positionId])
+  @@map("transactions")
+}
+
+model Position {
+  id               String      @id @default(uuid())
+  tradingAccountId String
+  symbol           String
+  productType      String      @default("MIS")
+  isIntraday       Boolean     @default(true)
+  instrumentId     String?
+  segment          String?
+  exchange         String?
+  strikePrice      Decimal?    @db.Decimal(10, 2)
+  optionType       OptionType?
+  expiry           DateTime?
+  token            Int?
+  uirId            Int?
+  canonicalSymbol  String?
+  quantity         Int
+  averagePrice     Decimal     @db.Decimal(10, 2)
+  unrealizedPnL    Decimal     @default(0) @db.Decimal(18, 2)
+  dayPnL           Decimal     @default(0) @db.Decimal(18, 2)
+  stopLoss         Decimal?    @db.Decimal(10, 2)
+  target           Decimal?    @db.Decimal(10, 2)
+  createdAt        DateTime    @default(now())
+  closedAt         DateTime?
+  closureReason    String?
+  closureNote      String?     @db.VarChar(500)
+  closedByUserId   String?
+
+  tradingAccount TradingAccount @relation(fields: [tradingAccountId], references: [id], onDelete: Cascade)
+  Stock          Stock?         @relation(fields: [stockId], references: [id])
+  stockId        String?
+  orders         Order[]
+  // Reverse relation to transactions linked to this position
+  transactions   Transaction[]
+  closedBy       User?          @relation("PositionClosedBy", fields: [closedByUserId], references: [id], onDelete: SetNull)
+
+  @@index([tradingAccountId, stockId, productType, createdAt])
+  @@index([tradingAccountId, instrumentId, segment, optionType, expiry, strikePrice, productType, createdAt])
+  @@index([tradingAccountId, productType, isIntraday, closedAt])
+  @@index([tradingAccountId, closedAt])
+  @@index([closureReason])
+  @@index([closedByUserId])
+  @@map("positions")
+}
+
+model VortexSession {
+  id          Int      @id @default(autoincrement())
+  userId      Int // agar aapke paas users table hai
+  accessToken String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now()) @updatedAt
+}
+
+model OtpToken {
+  id        String     @id @default(uuid())
+  userId    String
+  phone     String
+  otp       String
+  purpose   OtpPurpose
+  attempts  Int        @default(0)
+  isUsed    Boolean    @default(false)
+  expiresAt DateTime
+  createdAt DateTime   @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([phone])
+  @@index([purpose])
+  @@index([expiresAt])
+  @@map("otp_tokens")
+}
+
+model SessionAuth {
+  id              String   @id @default(uuid())
+  userId          String
+  sessionToken    String   @unique
+  isAuthenticated Boolean  @default(false)
+  isMpinVerified  Boolean  @default(false)
+  deviceId        String?
+  ipAddress       String?
+  userAgent       String?
+  expiresAt       DateTime
+  createdAt       DateTime @default(now())
+  lastActivity    DateTime @default(now())
+
+  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userSessionRecord UserSessionRecord?
+
+  @@index([userId])
+  @@index([sessionToken])
+  @@index([expiresAt])
+  @@map("session_auth")
+}
+
+model UserSessionRecord {
+  id            String          @id @default(uuid())
+  userId        String
+  kind          UserSessionKind
+  jti           String?         @unique
+  sessionAuthId String?         @unique
+  sessionAuth   SessionAuth?    @relation(fields: [sessionAuthId], references: [id], onDelete: Cascade)
+  ipFingerprint String?
+  networkKey    String?
+  userAgentHash String?
+  deviceId      String?
+  createdAt     DateTime        @default(now())
+  lastSeenAt    DateTime        @default(now())
+  revokedAt     DateTime?
+  expiresAt     DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, revokedAt])
+  @@index([networkKey, lastSeenAt])
+  @@index([jti])
+  @@map("user_session_records")
+}
+
+model SecurityIncident {
+  id             String                 @id @default(uuid())
+  type           SecurityIncidentType
+  severity       AuthEventSeverity      @default(MEDIUM)
+  status         SecurityIncidentStatus @default(OPEN)
+  message        String
+  payload        Json?
+  networkKey     String?
+  relatedUserIds String[]               @default([]) @map("related_user_ids")
+  createdAt      DateTime               @default(now())
+  updatedAt      DateTime               @updatedAt
+  resolvedAt     DateTime?              @map("resolved_at")
+  resolvedById   String?                @map("resolved_by_id")
+  resolvedBy     User?                  @relation("SecurityIncidentResolvedBy", fields: [resolvedById], references: [id], onDelete: SetNull)
+
+  @@index([type])
+  @@index([status])
+  @@index([networkKey])
+  @@index([createdAt])
+  @@map("security_incidents")
+}
+
+/// One-time MPIN step-up challenge after clustered-network login (STEP_UP policy).
+model SessionSecurityStepUpChallenge {
+  id         String    @id @default(uuid())
+  userId     String    @map("user_id")
+  networkKey String    @map("network_key")
+  consumedAt DateTime? @map("consumed_at")
+  expiresAt  DateTime  @map("expires_at")
+  createdAt  DateTime  @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, consumedAt])
+  @@index([expiresAt])
+  @@map("session_security_step_up_challenges")
+}
+
+model AuthEvent {
+  id        String            @id @default(uuid())
+  userId    String?
+  eventType AuthEventType
+  severity  AuthEventSeverity
+  message   String
+  metadata  String? // JSON string
+  timestamp DateTime
+  createdAt DateTime          @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([eventType])
+  @@index([severity])
+  @@index([timestamp])
+  @@map("auth_events")
+}
+
+model RiskConfig {
+  id              String   @id @default(uuid())
+  segment         String // NSE, NFO, MCX, etc.
+  productType     String   @map("product_type") // MIS, DELIVERY, etc.
+  leverage        Decimal  @default(1) @db.Decimal(10, 2)
+  brokerageFlat   Decimal? @map("brokerage_flat") @db.Decimal(10, 2)
+  brokerageRate   Decimal? @map("brokerage_rate") @db.Decimal(10, 6)
+  brokerageCap    Decimal? @map("brokerage_cap") @db.Decimal(10, 2)
+  marginRate      Decimal? @map("margin_rate") @db.Decimal(10, 6) // Margin percentage required
+  /// INR minimum required margin per lot for short options (CE/PE + SELL); null = no floor
+  minMarginPerLot Decimal? @map("min_margin_per_lot") @db.Decimal(18, 2)
+  maxOrderValue   Decimal? @map("max_order_value") @db.Decimal(18, 2)
+  maxPositions    Int?     @map("max_positions")
+  active          Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @default(now()) @updatedAt
+
+  @@unique([segment, productType])
+  @@index([segment])
+  @@index([productType])
+  @@index([active])
+  @@map("risk_config")
+}
+
+model TradingLog {
+  id               String      @id @default(uuid())
+  clientId         String      @map("client_id")
+  userId           String?
+  tradingAccountId String?     @map("trading_account_id")
+  level            LogLevel    @default(INFO)
+  category         LogCategory
+  action           String // e.g., "ORDER_PLACED", "POSITION_CREATED", "FUNDS_DEDUCTED"
+  message          String
+  details          Json? // Additional structured data
+  metadata         Json? // Request headers, IP, user agent, etc.
+  error            String? // Error message if applicable
+  stackTrace       String? // Stack trace for errors
+  createdAt        DateTime    @default(now())
+
+  @@index([clientId])
+  @@index([category])
+  @@index([level])
+  @@index([createdAt])
+  @@map("trading_logs")
+}
+
+// Console-specific models for real user data
+model BankAccount {
+  id                String   @id @default(uuid())
+  userId            String
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bankName          String
+  accountNumber     String
+  ifscCode          String
+  accountHolderName String
+  accountType       String   @default("savings") // savings, current
+  isDefault         Boolean  @default(false)
+  isActive          Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  deposits    Deposit[]
+  withdrawals Withdrawal[]
+
+  @@unique([userId, accountNumber])
+  @@index([userId])
+  @@map("bank_accounts")
+}
+
+model Deposit {
+  id               String         @id @default(uuid())
+  userId           String
+  user             User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tradingAccountId String
+  tradingAccount   TradingAccount @relation(fields: [tradingAccountId], references: [id], onDelete: Cascade)
+  bankAccountId    String?
+  bankAccount      BankAccount?   @relation(fields: [bankAccountId], references: [id], onDelete: SetNull)
+  amount           Decimal        @db.Decimal(18, 2)
+  method           String // upi, bank_transfer, neft, rtgs, cash
+  status           DepositStatus  @default(PENDING)
+  utr              String? // UTR number for tracking
+  reference        String? // Reference number
+  remarks          String?
+  cryptoNetwork    String?
+  cryptoTxHash     String?
+  cryptoAsset      String?
+  // Optional proof of payment image storage
+  screenshotUrl    String?
+  screenshotKey    String?
+  processedAt      DateTime?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  @@index([userId])
+  @@index([tradingAccountId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("deposits")
+}
+
+model Withdrawal {
+  id               String           @id @default(uuid())
+  userId           String
+  user             User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tradingAccountId String
+  tradingAccount   TradingAccount   @relation(fields: [tradingAccountId], references: [id], onDelete: Cascade)
+  bankAccountId    String
+  bankAccount      BankAccount      @relation(fields: [bankAccountId], references: [id], onDelete: Cascade)
+  amount           Decimal          @db.Decimal(18, 2)
+  status           WithdrawalStatus @default(PENDING)
+  reference        String? // Reference number
+  remarks          String?
+  charges          Decimal          @default(0) @db.Decimal(18, 2)
+  processedAt      DateTime?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  // ─── Phase 13a — Risk-aware hold + approval-chain (additive) ───────────────────────────
+  // Risk score is composed from the rules in `WithdrawalRiskRule` at *creation time* — the
+  // snapshot is captured into `holdRuleKeys` so subsequent rule edits don't retroactively
+  // change a queue row's reasoning. `approvalChain` is withdrawal-local on purpose: Phase 14
+  // will introduce a generic `ApprovalRequest` later and we will migrate, but Phase 13a must
+  // ship independently.
+  /// Composite 0–100 score; ≥ holdThreshold (default 50) auto-routes to manual review.
+  riskScore     Int       @default(0)
+  /// Single-line summary of the dominant hold reason ("FIRST_WITHDRAWAL", "LARGE_VS_DEPOSIT", etc.)
+  holdReason    String?   @db.VarChar(120)
+  /// Snapshot of every rule_key that fired at evaluation time. Frozen at queue-time.
+  holdRuleKeys  String[]  @default([])
+  /// Multi-step approval ladder (RM → Ops → Super-Admin). Shape: [{stepIndex, role, approverId?, action, at, note}].
+  /// JSON-on-row to keep Phase 13a self-contained; Phase 14 will lift this into ApprovalRequest.
+  approvalChain Json      @default("[]")
+  /// When the queue row first transitioned into HOLD/PENDING_REVIEW. Distinct from createdAt
+  /// because a withdrawal can be flagged later (e.g. post-big-win rule fires after creation).
+  heldAt        DateTime?
+  /// When the hold was lifted (admin approve OR auto-release after cool-down). Null = still held.
+  releasedAt    DateTime?
+
+  // Phase 13b — surveillance back-edges. Cascade-delete on the alert row when the queue row
+  // is deleted (we never want orphan alerts pointing at vanished withdrawals).
+  surveillanceAlerts HouseSurveillanceAlert[] @relation("SurveillanceAlertWithdrawal")
+
+  @@index([userId])
+  @@index([tradingAccountId])
+  @@index([status])
+  @@index([createdAt])
+  @@index([status, riskScore])
+  @@index([heldAt])
+  @@map("withdrawals")
+}
+
+model UserProfile {
+  id                   String    @id @default(uuid())
+  userId               String    @unique
+  user                 User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  firstName            String?
+  lastName             String?
+  dateOfBirth          DateTime?
+  gender               String?
+  address              String?
+  city                 String?
+  state                String?
+  pincode              String?
+  panNumber            String?
+  aadhaarNumber        String?
+  occupation           String?
+  annualIncome         Decimal?  @db.Decimal(18, 2)
+  riskProfile          String?   @default("MODERATE") // CONSERVATIVE, MODERATE, AGGRESSIVE
+  investmentExperience String? // BEGINNER, INTERMEDIATE, ADVANCED
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  @@map("user_profiles")
+}
+
+// System Settings - Platform-wide configuration
+model SystemSettings {
+  id          String   @id @default(uuid())
+  ownerId     String?
+  owner       User?    @relation("UserOwnedSettings", fields: [ownerId], references: [id], onDelete: SetNull)
+  key         String // e.g., "payment_qr_code", "payment_upi_id", "platform_logo"
+  value       String // URL or text value
+  description String? // Description of the setting
+  category    String   @default("GENERAL") // PAYMENT, BRANDING, NOTIFICATION, etc.
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([ownerId, key])
+  @@index([key])
+  @@index([category])
+  @@map("system_settings")
+}
+
+// Referral links for RM-led onboarding
+model ReferralLink {
+  id          String    @id @default(cuid())
+  code        String    @unique
+  createdById String
+  createdBy   User      @relation(fields: [createdById], references: [id], onDelete: Cascade)
+  expiresAt   DateTime?
+  maxUses     Int?
+  usedCount   Int       @default(0)
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  attributions ReferralAttribution[]
+
+  @@index([createdById])
+  @@map("referral_links")
+}
+
+/// Immutable signup attribution (one row per referee).
+model ReferralAttribution {
+  id             String        @id @default(uuid())
+  refereeUserId  String        @unique @map("referee_user_id")
+  referee        User          @relation("AttributionReferee", fields: [refereeUserId], references: [id], onDelete: Cascade)
+  referrerUserId String        @map("referrer_user_id")
+  referrer       User          @relation("AttributionReferrer", fields: [referrerUserId], references: [id], onDelete: Restrict)
+  referralLinkId String?       @map("referral_link_id")
+  referralLink   ReferralLink? @relation(fields: [referralLinkId], references: [id], onDelete: SetNull)
+  rawCode        String?       @map("raw_code")
+  /// URL_SIGNUP | MANUAL_ADMIN
+  source         String        @db.VarChar(32)
+  createdAt      DateTime      @default(now()) @map("created_at")
+
+  rewards ReferralReward[]
+
+  @@index([referrerUserId])
+  @@map("referral_attributions")
+}
+
+model ReferralRuleSet {
+  id          String   @id @default(uuid())
+  name        String
+  version     Int      @default(1)
+  isActive    Boolean  @default(true) @map("is_active")
+  createdById String?  @map("created_by_id")
+  createdBy   User?    @relation("ReferralRuleSetCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  rules                   ReferralMilestoneRule[]
+  programSettingsAsActive ReferralProgramSettings[]
+
+  @@index([isActive])
+  @@map("referral_rule_sets")
+}
+
+model ReferralMilestoneRule {
+  id              String          @id @default(uuid())
+  ruleSetId       String          @map("rule_set_id")
+  ruleSet         ReferralRuleSet @relation(fields: [ruleSetId], references: [id], onDelete: Cascade)
+  sortOrder       Int             @default(0) @map("sort_order")
+  minDepositTotal Decimal         @map("min_deposit_total") @db.Decimal(18, 2)
+  bonusReferrer   Decimal         @default(0) @map("bonus_referrer") @db.Decimal(18, 2)
+  bonusReferee    Decimal         @default(0) @map("bonus_referee") @db.Decimal(18, 2)
+  activeFrom      DateTime?       @map("active_from")
+  activeTo        DateTime?       @map("active_to")
+  isActive        Boolean         @default(true) @map("is_active")
+  createdAt       DateTime        @default(now()) @map("created_at")
+  updatedAt       DateTime        @updatedAt @map("updated_at")
+
+  rewards ReferralReward[]
+
+  @@unique([ruleSetId, sortOrder])
+  @@index([ruleSetId])
+  @@map("referral_milestone_rules")
+}
+
+model ReferralReward {
+  id                String                @id @default(uuid())
+  attributionId     String                @map("attribution_id")
+  attribution       ReferralAttribution   @relation(fields: [attributionId], references: [id], onDelete: Cascade)
+  ruleId            String                @map("rule_id")
+  rule              ReferralMilestoneRule @relation(fields: [ruleId], references: [id], onDelete: Restrict)
+  milestoneKey      String                @map("milestone_key") @db.VarChar(64)
+  beneficiaryUserId String                @map("beneficiary_user_id")
+  beneficiary       User                  @relation("ReferralRewardBeneficiary", fields: [beneficiaryUserId], references: [id], onDelete: Cascade)
+  /// Referrer bonus amount (paid to referrer when this row is referrer-side) or referee bonus — two rows per milestone if both sides paid.
+  role              String                @default("REFERRER") @db.VarChar(16)
+  amount            Decimal               @db.Decimal(18, 2)
+  status            ReferralRewardStatus  @default(PENDING)
+  triggerDepositId  String?               @map("trigger_deposit_id")
+  paidAt            DateTime?             @map("paid_at")
+  paidTransactionId String?               @map("paid_transaction_id")
+  lastEvaluatedAt   DateTime?             @map("last_evaluated_at")
+  failureReason     String?               @map("failure_reason") @db.VarChar(512)
+  createdAt         DateTime              @default(now()) @map("created_at")
+  updatedAt         DateTime              @updatedAt @map("updated_at")
+
+  @@unique([beneficiaryUserId, ruleId, milestoneKey, role])
+  @@index([attributionId])
+  @@index([status])
+  @@index([beneficiaryUserId])
+  @@map("referral_rewards")
+}
+
+/// Singleton row (id=1) — platform referral program toggles.
+model ReferralProgramSettings {
+  id                          Int              @id @default(1)
+  isActive                    Boolean          @default(false) @map("is_active")
+  activeRuleSetId             String?          @map("active_rule_set_id")
+  activeRuleSet               ReferralRuleSet? @relation(fields: [activeRuleSetId], references: [id], onDelete: SetNull)
+  requireKycApprovedForPayout Boolean          @default(true) @map("require_kyc_approved_for_payout")
+  /// When true, users with program active see milestone thresholds (and optional amounts) in console.
+  showRulesToUsers            Boolean          @default(false) @map("show_rules_to_users")
+  /// When true with showRulesToUsers, bonus amounts are shown; otherwise thresholds only.
+  showBonusAmountsToUsers     Boolean          @default(false) @map("show_bonus_amounts_to_users")
+  /// Optional admin copy (plain/markdown) shown with public rules.
+  publicRulesNotice           String?          @map("public_rules_notice") @db.Text
+  updatedAt                   DateTime         @updatedAt @map("updated_at")
+
+  @@map("referral_program_settings")
+}
+
+/// Per-user referral UI preferences (console “Referral Settings”).
+model ReferralUserPreference {
+  userId         String   @id @map("user_id")
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  marketingOptIn Boolean  @default(true) @map("marketing_opt_in")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  @@map("referral_user_preferences")
+}
+
+// Additional enums for console functionality
+enum DepositStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum WithdrawalStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+// Enterprise Features Models
+model RiskLimit {
+  id                 String   @id @default(uuid())
+  userId             String   @unique @map("user_id")
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  maxDailyLoss       Decimal  @default(0) @map("max_daily_loss") @db.Decimal(18, 2)
+  maxPositionSize    Decimal  @default(0) @map("max_position_size") @db.Decimal(18, 2)
+  maxLeverage        Decimal  @default(1) @map("max_leverage") @db.Decimal(10, 2)
+  maxDailyTrades     Int      @default(0) @map("max_daily_trades")
+  status             String   @default("ACTIVE") // ACTIVE, SUSPENDED, WARNING
+  // Per-user threshold overrides — NULL means "inherit global RiskConfig value"
+  riskLevelLowPct    Float?   @map("risk_level_low_pct")
+  riskLevelMediumPct Float?   @map("risk_level_medium_pct")
+  riskLevelHighPct   Float?   @map("risk_level_high_pct")
+  autoCloseLevelPct  Float?   @map("auto_close_level_pct")
+  maxDailyLossInr    Decimal? @map("max_daily_loss_inr") @db.Decimal(18, 2)
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+
+  @@index([userId])
+  @@index([status])
+  @@map("risk_limits")
+}
+
+model RiskAlert {
+  id             String    @id @default(uuid())
+  userId         String    @map("user_id")
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type           String // LIMIT_EXCEEDED, LARGE_LOSS, UNUSUAL_ACTIVITY, MARGIN_CALL
+  severity       String    @default("MEDIUM") // LOW, MEDIUM, HIGH, CRITICAL
+  message        String
+  resolved       Boolean   @default(false)
+  resolvedAt     DateTime? @map("resolved_at")
+  resolvedBy     String?   @map("resolved_by")
+  resolvedByUser User?     @relation("ResolvedAlerts", fields: [resolvedBy], references: [id], onDelete: SetNull)
+  createdAt      DateTime  @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@index([type])
+  @@index([severity])
+  @@index([resolved])
+  @@index([createdAt])
+  @@map("risk_alerts")
+}
+
+model RiskAuditEvent {
+  id             String             @id @default(cuid())
+  eventType      RiskAuditEventType
+  targetUserId   String
+  operatorUserId String
+  reason         String             @db.Text
+  snapshotJson   Json
+  outcomeJson    Json?
+  createdAt      DateTime           @default(now())
+
+  targetUser   User @relation("RiskAuditTarget", fields: [targetUserId], references: [id])
+  operatorUser User @relation("RiskAuditOperator", fields: [operatorUserId], references: [id])
+
+  @@index([targetUserId, createdAt(sort: Desc)])
+  @@index([eventType, createdAt(sort: Desc)])
+  @@map("risk_audit_events")
+}
+
+enum RiskAuditEventType {
+  BULK_LIQUIDATE
+  MARGIN_OVERRIDE
+  FORCED_CLOSE
+  SEGMENT_BLOCK
+  OTHER
+}
+
+model Notification {
+  id            String    @id @default(uuid())
+  title         String
+  message       String
+  type          String    @default("INFO") // INFO, WARNING, ERROR, SUCCESS
+  priority      String    @default("MEDIUM") // LOW, MEDIUM, HIGH, URGENT
+  target        String    @default("ALL") // ALL, ADMINS, USERS, SPECIFIC
+  targetUserIds String[]  @map("target_user_ids")
+  expiresAt     DateTime? @map("expires_at")
+  readBy        String[]  @default([]) @map("read_by")
+  createdBy     String?   @map("created_by")
+  createdByUser User?     @relation("CreatedNotifications", fields: [createdBy], references: [id], onDelete: SetNull)
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  @@index([type])
+  @@index([priority])
+  @@index([target])
+  @@index([createdAt])
+  @@index([expiresAt])
+  @@map("notifications")
+}
+
+//////////////////////////
+// User Segments & Trading Policies (MT5-style Groups)
+//////////////////////////
+
+/// Named user bucket with shared trading rules. Users can belong to multiple segments.
+model UserSegment {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  description String?
+  color       String?  @default("#6366F1")
+  isActive    Boolean  @default(true) @map("is_active")
+  createdById String?  @map("created_by_id")
+  createdBy   User?    @relation("UserSegmentCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  members  UserSegmentMember[]
+  policies UserSegmentPolicy[]
+
+  @@index([isActive])
+  @@map("user_segments")
+}
+
+/// Membership linking table: user ↔ segment.
+model UserSegmentMember {
+  userId    String   @map("user_id")
+  segmentId String   @map("segment_id")
+  addedAt   DateTime @default(now()) @map("added_at")
+  addedById String?  @map("added_by_id")
+
+  user    User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  segment UserSegment @relation(fields: [segmentId], references: [id], onDelete: Cascade)
+
+  @@id([userId, segmentId])
+  @@index([segmentId])
+  @@map("user_segment_members")
+}
+
+/// A set of trading rule overrides. Null fields inherit from global RiskConfig.
+model TradingPolicy {
+  id          String  @id @default(uuid())
+  name        String  @unique
+  description String?
+  isActive    Boolean @default(true) @map("is_active")
+
+  /// Override fields — null means inherit from global RiskConfig
+  leverage        Decimal? @db.Decimal(10, 2)
+  brokerageFlat   Decimal? @map("brokerage_flat") @db.Decimal(10, 2)
+  brokerageRate   Decimal? @map("brokerage_rate") @db.Decimal(10, 6)
+  maxDailyLoss    Decimal? @map("max_daily_loss") @db.Decimal(18, 2)
+  maxDailyTrades  Int?     @map("max_daily_trades")
+  maxPositions    Int?     @map("max_positions")
+  maxOrderValue   Decimal? @map("max_order_value") @db.Decimal(18, 2)
+  /// Empty array = all segments allowed. Otherwise restrict to listed values e.g. ["NSE","NFO"].
+  allowedSegments String[] @default([]) @map("allowed_segments")
+
+  createdById String?  @map("created_by_id")
+  createdBy   User?    @relation("TradingPolicyCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  segments UserSegmentPolicy[]
+
+  @@index([isActive])
+  @@map("trading_policies")
+}
+
+/// Many-to-many: segment ↔ policy. Higher priority wins in conflict resolution.
+model UserSegmentPolicy {
+  segmentId String @map("segment_id")
+  policyId  String @map("policy_id")
+  priority  Int    @default(0)
+
+  segment UserSegment   @relation(fields: [segmentId], references: [id], onDelete: Cascade)
+  policy  TradingPolicy @relation(fields: [policyId], references: [id], onDelete: Cascade)
+
+  @@id([segmentId, policyId])
+  @@index([policyId])
+  @@map("user_segment_policies")
+}
+
+/// Client-originated queue for assigning a first RM (managedById was null). Resolved via admin RM tools or PATCH.
+model RmAssignmentRequest {
+  id            String    @id @default(uuid())
+  userId        String    @map("user_id")
+  user          User      @relation("RmAssignmentRequestUser", fields: [userId], references: [id], onDelete: Cascade)
+  /// PENDING | FULFILLED | DISMISSED
+  status        String    @default("PENDING")
+  note          String?
+  dismissReason String?   @map("dismiss_reason")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  resolvedAt    DateTime? @map("resolved_at")
+  resolvedById  String?   @map("resolved_by_id")
+  resolvedBy    User?     @relation("RmAssignmentRequestResolvedBy", fields: [resolvedById], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("rm_assignment_requests")
+}
+
+/// Per-user Market Control override (Phase 2). Beats segmentOverrides in the resolver hierarchy.
+/// Used for admin whitelists (spreadMult=0 → raw LTP) and blacklists (extreme spread).
+model UserMarketControlOverride {
+  userId           String    @id @map("user_id")
+  enabled          Boolean   @default(true)
+  spreadMult       Float     @default(1.0) @map("spread_mult")
+  slipMult         Float     @default(1.0) @map("slip_mult")
+  antiScalpRelaxed Boolean   @default(false) @map("anti_scalp_relaxed")
+  forceWorstFill   Boolean   @default(false) @map("force_worst_fill")
+  marginMultiplier Float     @default(1.0) @map("margin_multiplier")
+  tiltBiasPct      Float     @default(0) @map("tilt_bias_pct")
+  reason           String?
+  setById          String?   @map("set_by_id")
+  expiresAt        DateTime? @map("expires_at")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([enabled, expiresAt])
+  @@map("user_market_control_overrides")
+}
+
+// =====================================================================================
+// Phase 9 — Winner Mitigation Engine (B-book counterparty defence ladder)
+//
+// The broker is the counterparty for every client trade. Clients who consistently win
+// are pure liability — there is no A-book offload. The mitigation ladder is the
+// graduated restriction toolkit: Watch → Spread Widen → Position Cap → Instrument Block
+// → Order Reject → Close-only → Close-out. All overrides are reversible except Close-out.
+//
+// Auto-promotion is event-driven (subscribes to settled Transaction events; debounced
+// 60s/client; idempotent on Transaction.id). Admins can pin a client at any rung
+// (auto-engine stops touching them) and override individual restrictions manually.
+// =====================================================================================
+
+enum WinnerRung {
+  NONE
+  WATCH
+  SPREAD_WIDEN
+  POSITION_CAP
+  INSTRUMENT_BLOCK
+  ORDER_REJECT
+  CLOSE_ONLY
+  CLOSED_OUT
+
+  @@map("winner_rungs")
+}
+
+model ClientWinnerControl {
+  id                 String     @id @default(uuid())
+  userId             String     @unique @map("user_id")
+  user               User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  rung               WinnerRung @default(NONE)
+  /// Multiplier applied to baseline tier spread (e.g., 1.5×, 2×, 3×). NULL = tier default.
+  spreadMultiplier   Decimal?   @map("spread_multiplier") @db.Decimal(6, 3)
+  /// % of tier-default position cap allowed (e.g., 50.00 = 50% of default). NULL = tier default.
+  positionCapPct     Decimal?   @map("position_cap_pct") @db.Decimal(5, 2)
+  /// Symbols this client may not trade (e.g., ["RELIANCE", "NIFTY-FUT"]).
+  blockedInstruments String[]   @default([]) @map("blocked_instruments")
+  /// Segments this client may not trade (e.g., ["NFO", "MCX"]).
+  blockedSegments    String[]   @default([]) @map("blocked_segments")
+  /// Auto-reject orders above this notional (rupees). NULL = no cap.
+  maxOrderNotional   Decimal?   @map("max_order_notional") @db.Decimal(18, 2)
+  /// True = auto-promotion engine ignores this client (admin has pinned the rung).
+  pinned             Boolean    @default(false)
+  reason             String?    @db.VarChar(512)
+  updatedById        String?    @map("updated_by_id")
+  updatedBy          User?      @relation("WinnerControlUpdater", fields: [updatedById], references: [id], onDelete: SetNull)
+  updatedAt          DateTime   @updatedAt @map("updated_at")
+  createdAt          DateTime   @default(now()) @map("created_at")
+
+  history ClientWinnerControlHistory[]
+
+  @@index([rung, updatedAt])
+  @@index([pinned, rung])
+  @@map("client_winner_controls")
+}
+
+model ClientWinnerControlHistory {
+  id                       String              @id @default(uuid())
+  controlId                String              @map("control_id")
+  control                  ClientWinnerControl @relation(fields: [controlId], references: [id], onDelete: Cascade)
+  /// One of: AUTO_PROMOTE | AUTO_DEMOTE | MANUAL_SET | MANUAL_OVERRIDE | RESET | PIN | UNPIN
+  action                   String              @db.VarChar(32)
+  fromRung                 WinnerRung          @map("from_rung")
+  toRung                   WinnerRung          @map("to_rung")
+  reason                   String?             @db.VarChar(512)
+  /// NULL = auto-engine triggered. Set = manual change by an admin.
+  triggeredById            String?             @map("triggered_by_id")
+  triggeredBy              User?               @relation("WinnerControlTrigger", fields: [triggeredById], references: [id], onDelete: SetNull)
+  /// Settled Transaction that triggered the auto-promotion (idempotency key for the engine).
+  triggeredByTransactionId String?             @map("triggered_by_transaction_id")
+  metadata                 Json?
+  createdAt                DateTime            @default(now()) @map("created_at")
+
+  @@index([controlId, createdAt(sort: Desc)])
+  @@index([triggeredByTransactionId])
+  @@map("client_winner_control_history")
+}
+
+// =====================================================================================
+// Phase 9 — Spread / Markup Configuration
+//
+// Quotes flow raw from Vortex/Stocksocket; the broker applies a per-instrument /
+// per-segment / per-client-tier markup on top before delivery. Cache invalidation is
+// Redis pub/sub (channel: spread_config:changed). Per-client multiplier (winner control
+// rung 2) is applied AFTER this baseline.
+// =====================================================================================
+
+model SpreadConfig {
+  id           String   @id @default(uuid())
+  /// NULL = applies to all instruments in scope; specific symbol overrides.
+  instrument   String?
+  /// NULL = applies to all segments; e.g., "NSE", "NFO", "MCX".
+  segment      String?
+  /// NULL = applies to all tiers; e.g., "BRONZE", "SILVER", "GOLD", "VIP".
+  clientTier   String?  @map("client_tier")
+  /// Bid-side markup in basis points (1 bps = 0.01%).
+  bidMarkupBps Decimal  @map("bid_markup_bps") @db.Decimal(8, 4)
+  askMarkupBps Decimal  @map("ask_markup_bps") @db.Decimal(8, 4)
+  isActive     Boolean  @default(true) @map("is_active")
+  reason       String?  @db.VarChar(512)
+  createdById  String?  @map("created_by_id")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@index([isActive, instrument, segment, clientTier])
+  @@map("spread_configs")
+}
+
+// =====================================================================================
+// Phase 9 — Trade Adjustment Audit Log
+//
+// Manual reject / requote / void / force-margin-call / force-liquidate are dangerous
+// operations on live orders + positions. Every adjustment lands here with full context.
+// =====================================================================================
+
+model TradeAdjustmentLog {
+  id            String   @id @default(uuid())
+  /// NULL when the adjustment targets a position rather than a specific order.
+  orderId       String?  @map("order_id")
+  /// NULL when the adjustment targets a free-standing order.
+  positionId    String?  @map("position_id")
+  /// User whose trade is being adjusted.
+  userId        String   @map("user_id")
+  user          User     @relation("TradeAdjustmentTarget", fields: [userId], references: [id], onDelete: Cascade)
+  /// MANUAL_REJECT | REQUOTE | VOID | FORCE_MARGIN_CALL | FORCE_LIQUIDATE
+  action        String   @db.VarChar(32)
+  fromValue     Json?    @map("from_value")
+  toValue       Json?    @map("to_value")
+  reason        String?  @db.VarChar(512)
+  performedById String   @map("performed_by_id")
+  performedBy   User     @relation("TradeAdjustmentPerformer", fields: [performedById], references: [id], onDelete: Restrict)
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([orderId])
+  @@index([positionId])
+  @@map("trade_adjustment_logs")
+}
+
+// =====================================================================================
+// Phase 10 — Bonus / Credit / Promo Engine
+//
+// How B-books grow: deposit-match bonuses, no-deposit bonuses, lossback, referral.
+// Bonuses live in TradingAccount.creditBalance (non-withdrawable until turnover unlocks).
+// Burndown engine in lib/bonus/burndown.ts advances turnoverProgress on settled trades;
+// when progress >= rule.turnoverMultiplier × grant.amount, the grant moves to UNLOCKED.
+// =====================================================================================
+
+enum BonusKind {
+  DEPOSIT_MATCH
+  NO_DEPOSIT
+  LOSSBACK
+  REFERRAL
+
+  @@map("bonus_kinds")
+}
+
+enum BonusGrantStatus {
+  ACTIVE // not yet unlocked, still accruing turnover
+  UNLOCKED // turnover requirement met — credit becomes withdrawable
+  EXPIRED // expiry date passed before unlock
+  CLAWED_BACK // admin manual reversal
+
+  @@map("bonus_grant_statuses")
+}
+
+model BonusRule {
+  id                 String    @id @default(uuid())
+  name               String    @db.VarChar(120)
+  kind               BonusKind
+  /// For DEPOSIT_MATCH/LOSSBACK this is interpreted as % (0..100). For NO_DEPOSIT/REFERRAL,
+  /// as flat ₹ amount. Validators in lib/bonus/rules-service enforce shape per kind.
+  pctOrFlat          Decimal   @map("pct_or_flat") @db.Decimal(10, 2)
+  /// Optional cap on the granted amount in rupees (esp. for DEPOSIT_MATCH at high deposits).
+  maxAmount          Decimal?  @map("max_amount") @db.Decimal(18, 2)
+  /// Required turnover multiplier before the credit unlocks (e.g., 5× → trade 5× the grant
+  /// amount in notional volume to unlock for withdrawal).
+  turnoverMultiplier Decimal   @map("turnover_multiplier") @db.Decimal(6, 2)
+  /// Days until the grant expires if not unlocked. NULL = never expires.
+  expiryDays         Int?      @map("expiry_days")
+  isActive           Boolean   @default(true) @map("is_active")
+  description        String?   @db.VarChar(512)
+  createdById        String?   @map("created_by_id")
+  createdBy          User?     @relation("BonusRuleCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt          DateTime  @default(now()) @map("created_at")
+  updatedAt          DateTime  @updatedAt @map("updated_at")
+
+  grants     BonusGrant[]
+  promoCodes PromoCode[]
+
+  @@index([isActive, kind])
+  @@map("bonus_rules")
+}
+
+model BonusGrant {
+  id               String           @id @default(uuid())
+  userId           String           @map("user_id")
+  user             User             @relation("BonusGrantBeneficiary", fields: [userId], references: [id], onDelete: Cascade)
+  ruleId           String           @map("rule_id")
+  rule             BonusRule        @relation(fields: [ruleId], references: [id], onDelete: Restrict)
+  /// Grant amount in rupees.
+  amount           Decimal          @db.Decimal(18, 2)
+  status           BonusGrantStatus @default(ACTIVE)
+  /// Cumulative settled-trade notional in rupees attributed to this grant.
+  turnoverProgress Decimal          @default(0) @map("turnover_progress") @db.Decimal(18, 2)
+  expiresAt        DateTime?        @map("expires_at")
+  unlockedAt       DateTime?        @map("unlocked_at")
+  clawedBackAt     DateTime?        @map("clawed_back_at")
+  clawbackReason   String?          @map("clawback_reason") @db.VarChar(512)
+  /// Optional source — promo code redemption / RM grant / campaign id, free-form metadata.
+  source           String?          @db.VarChar(120)
+  metadata         Json?
+  grantedById      String?          @map("granted_by_id")
+  grantedBy        User?            @relation("BonusGrantIssuer", fields: [grantedById], references: [id], onDelete: SetNull)
+  grantedAt        DateTime         @default(now()) @map("granted_at")
+  updatedAt        DateTime         @updatedAt @map("updated_at")
+
+  // Phase 13b — BONUS_ABUSE alerts reference the abused grant.
+  surveillanceAlerts HouseSurveillanceAlert[] @relation("SurveillanceAlertBonusGrant")
+
+  @@index([userId, status])
+  @@index([status, expiresAt])
+  @@index([ruleId, status])
+  @@map("bonus_grants")
+}
+
+model PromoCode {
+  id          String    @id @default(uuid())
+  code        String    @unique @db.VarChar(40)
+  ruleId      String    @map("rule_id")
+  rule        BonusRule @relation(fields: [ruleId], references: [id], onDelete: Restrict)
+  maxUses     Int?      @map("max_uses")
+  usesCount   Int       @default(0) @map("uses_count")
+  expiresAt   DateTime? @map("expires_at")
+  isActive    Boolean   @default(true) @map("is_active")
+  notes       String?   @db.VarChar(512)
+  createdById String?   @map("created_by_id")
+  createdBy   User?     @relation("PromoCodeCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  @@index([isActive, expiresAt])
+  @@map("promo_codes")
+}
+
+// ────────────────────────────────────────────────────────────────────────────────
+// Phase 11 — Affiliate / IB Program
+// ────────────────────────────────────────────────────────────────────────────────
+//
+// SCOPE: National-grade affiliate program for B-book brokerage. Affiliates are external
+//        professionals (NOT traders) who refer clients in exchange for SPREAD / LOSS / LOT /
+//        FIXED commissions. Multi-level cascade (parent affiliate earns sub-commission).
+//
+// AUTH BOUNDARY: Affiliates have their OWN auth at /api/affiliate/auth — they are NOT
+//                rows in the User table. `Affiliate.linkedUserId` is OPTIONAL and only set
+//                when an affiliate is also a trader; even then, the two identities stay
+//                separate (affiliate logs in via affiliate auth, trades via trader auth).
+//                NEVER add an `AFFILIATE` value to the `Role` enum.
+//
+// COMPOSABILITY: A client can simultaneously have a `ReferralAttribution` (User-to-User
+//                referral) AND an `AffiliateAttribution` (UTM/code → external IB). They
+//                pay different beneficiaries; no double-pay risk because beneficiaries differ.
+//
+// IDEMPOTENCY: `AffiliateCommission` is keyed unique on (affiliateId, sourceTransactionId, kind)
+//              so the post-fill accrual hook can fire freely without double-counting.
+//
+// TDS: Recorded as `tdsAmount` per commission AND per payout. Default 0 — admin sets the
+//      rate at payout-approve time; rate is NEVER hardcoded. Engagement of finance/legal
+//      counsel is REQUIRED before the payout queue's "Mark Paid" button ships to production.
+
+enum AffiliateTier {
+  BRONZE
+  SILVER
+  GOLD
+}
+
+enum AffiliateStatus {
+  PENDING
+  ACTIVE
+  SUSPENDED
+  REJECTED
+}
+
+enum AffiliateCommissionKind {
+  SPREAD
+  LOSS
+  LOT
+  FIXED
+}
+
+enum AffiliateCommissionStatus {
+  ACCRUED
+  PAYABLE
+  PAID
+  CLAWED_BACK
+  VOID
+}
+
+enum AffiliatePayoutStatus {
+  PENDING
+  APPROVED
+  PAID
+  CANCELLED
+}
+
+model Affiliate {
+  id             String          @id @default(uuid())
+  /// External identifier (e.g., AFF-A1B2C3) — shown in UI, used in attribution URLs.
+  affiliateCode  String          @unique @map("affiliate_code") @db.VarChar(32)
+  email          String          @unique
+  passwordHash   String?         @map("password_hash")
+  /// Hash of optional 2FA secret. Null until affiliate enables 2FA via the self-service shell.
+  totpSecretHash String?         @map("totp_secret_hash")
+  name           String
+  phone          String?
+  tier           AffiliateTier   @default(BRONZE)
+  status         AffiliateStatus @default(PENDING)
+
+  /// Sub-affiliate cascade (multi-level commission flow).
+  parentAffiliateId String?     @map("parent_affiliate_id")
+  parentAffiliate   Affiliate?  @relation("AffiliateParent", fields: [parentAffiliateId], references: [id], onDelete: SetNull)
+  children          Affiliate[] @relation("AffiliateParent")
+
+  /// Optional link to a User row when the affiliate is also a trader.
+  /// One-way: trader-side code MUST NOT query User.linkedAffiliate in RBAC paths.
+  linkedUserId String? @unique @map("linked_user_id")
+  linkedUser   User?   @relation("AffiliateLinkedUser", fields: [linkedUserId], references: [id], onDelete: SetNull)
+
+  /// JSON blob: { kind: "BANK"|"UPI", details: { accountNumber, ifscCode, holderName }|{ vpa } }.
+  payoutMethod Json?   @map("payout_method")
+  /// Light KYC for TDS purposes — PAN, bank proof. Stored as JSON (no Aadhaar required).
+  kycLite      Json?   @map("kyc_lite")
+  notes        String? @db.Text
+
+  createdById String?  @map("created_by_id")
+  createdBy   User?    @relation("AffiliateCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedById String?  @map("updated_by_id")
+  updatedBy   User?    @relation("AffiliateUpdater", fields: [updatedById], references: [id], onDelete: SetNull)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  commissionRules AffiliateCommissionRule[]
+  attributions    AffiliateAttribution[]
+  commissions     AffiliateCommission[]
+  payouts         AffiliatePayout[]
+
+  // Phase 13b — surveillance back-edges (multi-account / IB collusion alerts reference the IB).
+  surveillanceAlerts HouseSurveillanceAlert[] @relation("SurveillanceAlertAffiliate")
+
+  @@index([tier, status])
+  @@index([parentAffiliateId])
+  @@index([status, createdAt])
+  @@map("affiliates")
+}
+
+/// Per-affiliate commission rules. Admin overrides tier defaults by inserting rows here.
+/// `scope` decides whether the rate is applied to spread revenue, client losses, lots traded,
+/// or a fixed amount per qualifying event. Multiple ACTIVE rules of different scopes can
+/// coexist for one affiliate (e.g., 30% of spread + ₹5/lot).
+model AffiliateCommissionRule {
+  id          String                  @id @default(uuid())
+  affiliateId String                  @map("affiliate_id")
+  affiliate   Affiliate               @relation(fields: [affiliateId], references: [id], onDelete: Cascade)
+  kind        AffiliateCommissionKind
+  /// SPREAD/LOSS: rate as a fraction (0.30 = 30%). LOT: rupees per lot. FIXED: rupees per event.
+  rate        Decimal                 @db.Decimal(12, 6)
+  /// Optional cap per accrual event (₹). Null = uncapped.
+  perEventCap Decimal?                @map("per_event_cap") @db.Decimal(18, 2)
+  /// Optional cap per calendar month (₹). Null = uncapped. Enforced by accrual engine.
+  perMonthCap Decimal?                @map("per_month_cap") @db.Decimal(18, 2)
+  isActive    Boolean                 @default(true) @map("is_active")
+  validFrom   DateTime?               @map("valid_from")
+  validTo     DateTime?               @map("valid_to")
+  notes       String?                 @db.VarChar(512)
+  createdAt   DateTime                @default(now()) @map("created_at")
+  updatedAt   DateTime                @updatedAt @map("updated_at")
+
+  @@index([affiliateId, isActive, kind])
+  @@map("affiliate_commission_rules")
+}
+
+/// Immutable signup attribution — one row per attributed client.
+/// First-touch wins: if a client lands via affiliate A and signs up later via affiliate B's
+/// link, A keeps the attribution (within 90-day window). Manual override via admin re-attribution
+/// writes a new row and SetsNull on the old `expiresAt` — full audit chain via `replacedById`.
+model AffiliateAttribution {
+  id             String                @id @default(uuid())
+  /// Attributed client.
+  userId         String                @unique @map("user_id")
+  user           User                  @relation("AffiliateAttributionClient", fields: [userId], references: [id], onDelete: Cascade)
+  /// Affiliate that gets credit for the client.
+  affiliateId    String                @map("affiliate_id")
+  affiliate      Affiliate             @relation(fields: [affiliateId], references: [id], onDelete: Restrict)
+  /// "URL" | "PROMO_CODE" | "MANUAL_ADMIN" | "API".
+  source         String                @db.VarChar(32)
+  /// Captured UTM blob: { utm_source, utm_medium, utm_campaign, utm_content, referrer }.
+  utm            Json?
+  /// First-touch landing time — used for 90-day expiry calc.
+  firstTouchAt   DateTime              @default(now()) @map("first_touch_at")
+  /// Hard expiry after which attribution stops accruing new commissions.
+  expiresAt      DateTime?             @map("expires_at")
+  /// Admin who manually attributed (null if URL/promo).
+  attributedById String?               @map("attributed_by_id")
+  attributedBy   User?                 @relation("AffiliateAttributionAdmin", fields: [attributedById], references: [id], onDelete: SetNull)
+  /// If a manual override replaced this row, link the replacement here.
+  replacedById   String?               @unique @map("replaced_by_id")
+  replacedBy     AffiliateAttribution? @relation("AffiliateAttributionReplacement", fields: [replacedById], references: [id], onDelete: SetNull)
+  replacedFor    AffiliateAttribution? @relation("AffiliateAttributionReplacement")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([affiliateId, createdAt])
+  @@index([expiresAt])
+  @@map("affiliate_attributions")
+}
+
+/// One row per accrual event — fires post-fill from OrderExecutionWorker.
+/// Idempotency key: (affiliateId, sourceTransactionId, kind). The accrual engine SAFELY
+/// upserts on this triple — if the post-fill hook re-fires for the same Transaction, no
+/// duplicate row is written.
+model AffiliateCommission {
+  id                  String                    @id @default(uuid())
+  affiliateId         String                    @map("affiliate_id")
+  affiliate           Affiliate                 @relation(fields: [affiliateId], references: [id], onDelete: Restrict)
+  /// Trader whose activity generated this commission.
+  sourceUserId        String                    @map("source_user_id")
+  sourceUser          User                      @relation("AffiliateCommissionSourceUser", fields: [sourceUserId], references: [id], onDelete: Restrict)
+  /// Settled Realized P&L Transaction.id when applicable; falls back to Order.id for
+  /// non-realized scopes (e.g., LOT-based on opening fills).
+  sourceTransactionId String                    @map("source_transaction_id") @db.VarChar(64)
+  kind                AffiliateCommissionKind
+  /// Computed amount in rupees. Always positive. CLAWED_BACK uses a separate offsetting row.
+  amount              Decimal                   @db.Decimal(18, 2)
+  /// Computed at payout time. Default 0 — set by admin per payout, audit-logged.
+  tdsAmount           Decimal                   @default(0) @map("tds_amount") @db.Decimal(18, 2)
+  status              AffiliateCommissionStatus @default(ACCRUED)
+  /// FK to the payout that picked this commission up. Set when status flips to PAYABLE/PAID.
+  payoutId            String?                   @map("payout_id")
+  payout              AffiliatePayout?          @relation(fields: [payoutId], references: [id], onDelete: SetNull)
+
+  /// Free-form metadata for debugging accrual decisions (rate, cap-hit, sub-affiliate share).
+  metadata Json?
+
+  accruedAt DateTime  @default(now()) @map("accrued_at")
+  paidAt    DateTime? @map("paid_at")
+
+  // Cascade unique on the dedupe triple — bulletproof idempotency.
+  @@unique([affiliateId, sourceTransactionId, kind], name: "affiliate_commission_dedupe")
+  @@index([affiliateId, status, accruedAt])
+  @@index([sourceUserId, accruedAt])
+  @@index([payoutId])
+  @@map("affiliate_commissions")
+}
+
+/// Batched payout for one affiliate. Bundles 1..N commissions; admin reviews + approves.
+/// `mark-paid` flips children to PAID and writes a TradingLog audit entry.
+model AffiliatePayout {
+  id           String                @id @default(uuid())
+  affiliateId  String                @map("affiliate_id")
+  affiliate    Affiliate             @relation(fields: [affiliateId], references: [id], onDelete: Restrict)
+  /// Sum of `commissions[].amount` (gross) at the time of payout creation.
+  grossAmount  Decimal               @map("gross_amount") @db.Decimal(18, 2)
+  /// Total TDS deducted across the bundled commissions.
+  tdsAmount    Decimal               @default(0) @map("tds_amount") @db.Decimal(18, 2)
+  /// `grossAmount - tdsAmount` — what actually transfers to the affiliate.
+  netAmount    Decimal               @map("net_amount") @db.Decimal(18, 2)
+  status       AffiliatePayoutStatus @default(PENDING)
+  /// Snapshot of payoutMethod at payout creation (so future affiliate detail edits don't
+  /// retroactively change paid-out routing).
+  payoutMethod Json                  @map("payout_method")
+  /// Admin notes / reference number (UTR for bank, txn ID for UPI).
+  reference    String?               @db.VarChar(128)
+
+  createdById  String?   @map("created_by_id")
+  createdBy    User?     @relation("AffiliatePayoutCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  approvedById String?   @map("approved_by_id")
+  approvedBy   User?     @relation("AffiliatePayoutApprover", fields: [approvedById], references: [id], onDelete: SetNull)
+  approvedAt   DateTime? @map("approved_at")
+  paidAt       DateTime? @map("paid_at")
+  cancelledAt  DateTime? @map("cancelled_at")
+  cancelReason String?   @map("cancel_reason") @db.VarChar(512)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  commissions AffiliateCommission[]
+
+  @@index([affiliateId, status, createdAt])
+  @@index([status, createdAt])
+  @@map("affiliate_payouts")
+}
+
+// =====================================================================================
+// Phase 12 — Communications Engine
+// =====================================================================================
+// SCOPE: Multi-channel outbound + inbound for B-book ops. Channels: WhatsApp, SMS (DLT-
+//        compliant in India), Email, Voice (recorded blast / dialer), Push.
+//
+// HARD GATES (enforced at the send-router, not optional):
+//   1. SMS without `dltTemplateId` is REJECTED at send time. India DLT (TRAI) compliance.
+//   2. Sending to a user with `CommsConsent.optInAt = null` (or `optOutAt != null`) for the
+//      target channel records a CommsMessage with status=OPTED_OUT and DOES NOT dispatch.
+//   3. Templates validate their `variables` array at SAVE time — every `{{var}}` in body must
+//      be declared. Unresolved vars at SEND time → status=REJECTED with reason.
+//
+// DESIGN DECISIONS (locked with advisor before schema write):
+//   - NO `CommsThread` model — threads are derived from CommsMessage queries (`WHERE userId
+//     AND channel ORDER BY createdAt`). Storing a thread row adds writes on every message
+//     with no read benefit at our scale.
+//   - NO `CommsCampaignRun` model — every dispatched message stores `campaignId + stepIndex`
+//     inline. Campaign progress is derived; per-user drip state lives in `CampaignEnrollment`.
+//   - `CampaignEnrollment.@@unique([userId, campaignId])` makes enrollment idempotent at DB
+//     level (re-enrolling a user is a no-op or an explicit reset, never a duplicate row).
+//   - `CommsConsent.@@unique([userId, channel])` makes opt-in/opt-out idempotent per-channel.
+//
+// INBOUND WEBHOOKS: every channel's inbound webhook MUST verify provider signature at the
+//                   route handler — no raw payload writes. WhatsApp = HMAC-SHA256 with
+//                   META_APP_SECRET; SMS DLT = provider-specific.
+//
+// VARIABLE SUBSTITUTION: keep simple — `{{name}}` style, render via small util in
+//                        lib/comms/template-render.ts. No partials, no conditionals.
+// =====================================================================================
+
+enum CommsChannel {
+  WHATSAPP
+  SMS
+  EMAIL
+  VOICE
+  PUSH
+
+  @@map("comms_channel")
+}
+
+enum CommsTemplateStatus {
+  DRAFT
+  ACTIVE
+  ARCHIVED
+
+  @@map("comms_template_status")
+}
+
+enum CommsCampaignKind {
+  ONE_SHOT // single blast; uses `steps[0]` as the message
+  DRIP // multi-step over time; CampaignEnrollment tracks per-user progress
+  TRIGGERED // event-driven; engine inserts enrollments on event match
+
+  @@map("comms_campaign_kind")
+}
+
+enum CommsCampaignStatus {
+  DRAFT
+  SCHEDULED
+  RUNNING
+  PAUSED
+  COMPLETED
+  CANCELLED
+
+  @@map("comms_campaign_status")
+}
+
+enum CommsMessageDirection {
+  OUTBOUND
+  INBOUND
+
+  @@map("comms_message_direction")
+}
+
+enum CommsMessageStatus {
+  QUEUED // accepted by router, awaiting provider dispatch
+  SENT // provider returned success
+  DELIVERED // provider delivery callback received
+  READ // optional — WhatsApp/email read receipts
+  FAILED // provider returned error after attempts
+  LOGGED // inbound — recorded only, no reply automation
+  OPTED_OUT // gate 2 — recipient lacks consent; not dispatched
+  REJECTED // gate 1 or 3 — DLT missing / template invalid / variable unresolved
+
+  @@map("comms_message_status")
+}
+
+enum CommsConsentSource {
+  SIGNUP_TERMS // implicit on registration via T&C
+  DOUBLE_OPT_IN // explicit confirmation flow
+  ADMIN_GRANT // manually granted by ops (audit-logged via updatedById)
+  IMPORT // bulk import from prior system
+
+  @@map("comms_consent_source")
+}
+
+/// CommsTemplate — reusable message body per channel. SMS templates require `dltTemplateId`.
+/// `variables` is the declared variable set; the SAVE handler must verify every `{{var}}` in
+/// `body` is in this list (and vice versa). Used by both campaigns and ad-hoc sends.
+model CommsTemplate {
+  id            String              @id @default(cuid())
+  name          String              @db.VarChar(100)
+  channel       CommsChannel
+  /// Declared variable names — e.g. ["name", "balance", "lastTrade"]. Validated at SAVE.
+  variables     String[]            @default([])
+  /// Channel-specific body. WhatsApp = approved template ref + body; SMS = body w/ {{var}};
+  /// Email = HTML/text + subject in `meta`; Voice = TTS script or recording URL in `meta`.
+  body          String              @db.Text
+  /// Channel-specific extras: subject line, headerImageUrl, ttsVoice, etc.
+  meta          Json                @default("{}")
+  /// India DLT (TRAI) requirement for SMS. NULL for non-SMS channels. SMS without this is
+  /// REJECTED at send-time.
+  dltTemplateId String?             @map("dlt_template_id") @db.VarChar(64)
+  status        CommsTemplateStatus @default(DRAFT)
+
+  createdById String?  @map("created_by_id")
+  createdBy   User?    @relation("CommsTemplateCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  campaigns CommsCampaign[]
+  messages  CommsMessage[]
+
+  @@index([channel, status])
+  @@index([dltTemplateId])
+  @@map("comms_templates")
+}
+
+/// CommsCampaign — orchestration unit. ONE_SHOT = blast all enrolled at scheduledAt.
+/// DRIP / TRIGGERED = engine walks `steps[]` per enrollment. `steps` shape:
+///   [{ templateId: string, delayMinutes?: number, condition?: string }, ...]
+/// Step 0 = first message; subsequent steps fire after `delayMinutes` from prior step.
+model CommsCampaign {
+  id      String              @id @default(cuid())
+  name    String              @db.VarChar(120)
+  kind    CommsCampaignKind   @default(ONE_SHOT)
+  channel CommsChannel
+  status  CommsCampaignStatus @default(DRAFT)
+
+  /// Steps definition — Json array. Validated at activation; engine reads at runtime.
+  steps       Json      @default("[]")
+  /// Audience definition — selector / filter spec. Validated at activation.
+  audience    Json      @default("{}")
+  /// Scheduling: NULL = manual run. For DRIP, this is the step-walker start window.
+  scheduledAt DateTime? @map("scheduled_at")
+
+  createdById String?  @map("created_by_id")
+  createdBy   User?    @relation("CommsCampaignCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  /// Optional default template — for ONE_SHOT campaigns; DRIP can reference different
+  /// templates per step inside `steps`.
+  defaultTemplateId String?        @map("default_template_id")
+  defaultTemplate   CommsTemplate? @relation(fields: [defaultTemplateId], references: [id], onDelete: SetNull)
+
+  enrollments CampaignEnrollment[]
+  messages    CommsMessage[]
+
+  @@index([status, scheduledAt])
+  @@index([channel, kind])
+  @@map("comms_campaigns")
+}
+
+/// CampaignEnrollment — per-user drip state for a campaign. Walks `currentStepIndex` through
+/// the parent campaign's `steps[]`. `nextScheduledAt` is set after each successful send to
+/// the next step's window. The drip-runner queries `WHERE nextScheduledAt <= now()`.
+model CampaignEnrollment {
+  id         String        @id @default(cuid())
+  userId     String        @map("user_id")
+  user       User          @relation("CampaignEnrollmentUser", fields: [userId], references: [id], onDelete: Cascade)
+  campaignId String        @map("campaign_id")
+  campaign   CommsCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  currentStepIndex Int       @default(0) @map("current_step_index")
+  nextScheduledAt  DateTime? @map("next_scheduled_at")
+  /// True when all steps have been dispatched (or campaign cancelled).
+  completedAt      DateTime? @map("completed_at")
+  /// Set when the enrollment is paused (user opt-out mid-drip, manual halt, etc.).
+  pausedAt         DateTime? @map("paused_at")
+  pauseReason      String?   @map("pause_reason")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([userId, campaignId])
+  @@index([campaignId, nextScheduledAt])
+  @@index([nextScheduledAt])
+  @@map("campaign_enrollments")
+}
+
+/// CommsMessage — every send + inbound, one row. campaignId + stepIndex inline (no run
+/// table). For OUTBOUND, `providerMessageId` is filled after dispatch; delivery callbacks
+/// update `status` + `deliveredAt` / `readAt`.
+model CommsMessage {
+  id        String                @id @default(cuid())
+  channel   CommsChannel
+  direction CommsMessageDirection @default(OUTBOUND)
+  status    CommsMessageStatus    @default(QUEUED)
+
+  userId String? @map("user_id")
+  user   User?   @relation("CommsMessageUser", fields: [userId], references: [id], onDelete: SetNull)
+
+  /// E.164 phone or email address. For OUTBOUND, denormalized from user at send time so the
+  /// audit trail survives user updates.
+  toAddress   String? @map("to_address") @db.VarChar(160)
+  fromAddress String? @map("from_address") @db.VarChar(160)
+
+  /// Resolved/rendered body (post-variable substitution). Stored for full audit.
+  renderedBody  String @map("rendered_body") @db.Text
+  /// Variables that were substituted (audit trail).
+  variablesUsed Json   @default("{}") @map("variables_used")
+
+  templateId String?        @map("template_id")
+  template   CommsTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
+
+  campaignId String?        @map("campaign_id")
+  campaign   CommsCampaign? @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+  stepIndex  Int?           @map("step_index")
+
+  /// Provider's message id — used to dedupe inbound delivery callbacks.
+  providerMessageId String? @map("provider_message_id") @db.VarChar(160)
+  /// Provider name e.g. "WHATSAPP_GUPSHUP", "SMS_KARIX", "EMAIL_SES", "VOICE_KNOWLARITY".
+  providerName      String? @map("provider_name") @db.VarChar(48)
+  /// Failure reason / OPTED_OUT reason / REJECTED reason (gate which blocked).
+  failureReason     String? @map("failure_reason") @db.Text
+  /// Provider response payload — for debugging and dispute resolution.
+  providerMeta      Json    @default("{}") @map("provider_meta")
+
+  queuedAt    DateTime  @default(now()) @map("queued_at")
+  sentAt      DateTime? @map("sent_at")
+  deliveredAt DateTime? @map("delivered_at")
+  readAt      DateTime? @map("read_at")
+  failedAt    DateTime? @map("failed_at")
+
+  @@index([userId, channel, queuedAt])
+  @@index([campaignId, stepIndex])
+  @@index([status, queuedAt])
+  @@index([providerName, providerMessageId])
+  @@index([direction, channel, queuedAt])
+  @@map("comms_messages")
+}
+
+/// CommsConsent — per-user, per-channel opt-in record. Source captured for legal trail
+/// (DPDP Act 2023 + DLT for SMS). `optOutAt` set on user-initiated stop; the row is NEVER
+/// deleted (audit invariant). Re-opt-in clears `optOutAt` and re-stamps `optInAt`.
+model CommsConsent {
+  id      String             @id @default(cuid())
+  userId  String             @map("user_id")
+  user    User               @relation("CommsConsentUser", fields: [userId], references: [id], onDelete: Cascade)
+  channel CommsChannel
+  source  CommsConsentSource
+
+  optInAt      DateTime? @map("opt_in_at")
+  optOutAt     DateTime? @map("opt_out_at")
+  /// Reason for opt-out — e.g. "USER_STOP_REPLY", "BOUNCE", "ADMIN_REVOKE".
+  optOutReason String?   @map("opt_out_reason") @db.VarChar(80)
+  /// Free-form notes — admin-set context (e.g. "imported from CRM 2024-01").
+  notes        String?   @db.Text
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([userId, channel])
+  @@index([channel, optInAt])
+  @@map("comms_consents")
+}
+
+// ════════════════════════════════════════════════════════════════════════════════════════════════
+// Phase 13 — House Risk · Surveillance · Withdrawal Review
+// ────────────────────────────────────────────────────────────────────────────────────────────────
+// FK / read matrix sketched here NOW so the next migration (13b — surveillance, 13c — house risk)
+// doesn't introduce a duplicate concept under a different name. If you add a new model in this
+// block, update this banner.
+//
+//   13a (this migration):
+//     · Withdrawal           [extended]   ← riskScore, holdReason, holdRuleKeys, approvalChain
+//     · WithdrawalRiskRule   [new]        ← admin-tunable rule registry; snapshot taken at eval
+//
+//   13b (next migration):
+//     · HouseSurveillanceAlert [new]
+//         ↳ relatedUserId        → User.id           (no cascade; alert outlives user purge)
+//         ↳ relatedWithdrawalId  → Withdrawal.id     (link back to the queue row that triggered)
+//         ↳ relatedTransactionId → Transaction.id    (Phase 9 — winner mitigation feedback)
+//         ↳ relatedBonusGrantId  → BonusGrant.id     (Phase 10 — bonus abuse rule)
+//         ↳ relatedAffiliateId   → Affiliate.id      (Phase 11 — multi-account / IB collusion)
+//         ↳ confidenceScore      Int 0–100          (advisor decision: ship from day 1)
+//     · SurveillanceRule       [new]        ← admin-tunable rule registry, mirrors WithdrawalRiskRule shape
+//
+//   13c (next migration):
+//     · HouseRiskCap           [new]        ← per-segment / per-symbol exposure caps
+//     · HouseCircuitBreaker    [new]        ← max-loss-per-day kill-switch state
+//
+//   13c.5 (deferred): full Greeks (delta/theta/vega) — pending IV input source.
+//
+// INVARIANT: every Phase 13* table that references a *user* uses `onDelete: NoAction` (we keep
+// the historical record). Every table that references a *transactional row* (withdrawal,
+// transaction) uses `onDelete: Cascade` so closing a queue row sweeps its children.
+// ════════════════════════════════════════════════════════════════════════════════════════════════
+
+/// Admin-tunable rule registry for the withdrawal risk engine. The engine reads ACTIVE rules,
+/// evaluates each against a withdrawal-in-flight, and contributes `points` to the composite
+/// `Withdrawal.riskScore`. The set of rules that fired is snapshotted onto
+/// `Withdrawal.holdRuleKeys` so subsequent rule edits don't retroactively rewrite history.
+///
+/// Default seeded rules (created in `npm run db:seed:phase-13a` — separate seed):
+///   FIRST_WITHDRAWAL          25  — user has zero prior approved withdrawals.
+///   LARGE_VS_DEPOSIT          30  — amount > params.pctOfLifetimeDeposit (default 80%).
+///   POST_BIG_WIN              30  — closed P&L within params.windowHours > params.minWin (24h / ₹50k).
+///   FRAUD_FLAGGED             100 — user has an open fraud surveillance alert (Phase 13b).
+///   DORMANT_REACTIVATION      15  — last login > params.dormantDays (default 90).
+model WithdrawalRiskRule {
+  id          String  @id @default(uuid())
+  /// Stable machine key used in `Withdrawal.holdRuleKeys[]`. Once seeded, never rename.
+  ruleKey     String  @unique @db.VarChar(64)
+  /// Human-friendly display label.
+  name        String  @db.VarChar(120)
+  /// Operator-facing description shown in the rule editor.
+  description String? @db.Text
+  /// Points added to `Withdrawal.riskScore` when this rule fires. 0 = passive observation only.
+  points      Int     @default(0)
+  /// Toggle to disable a rule without deleting (preserves historical `holdRuleKeys` references).
+  isActive    Boolean @default(true)
+  /// Rule-specific tuning, e.g. { pctOfLifetimeDeposit: 80 } or { windowHours: 24, minWin: 50000 }.
+  params      Json    @default("{}")
+
+  createdById String?
+  createdBy   User?   @relation("WithdrawalRiskRuleCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedById String?
+  updatedBy   User?   @relation("WithdrawalRiskRuleUpdater", fields: [updatedById], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([isActive, ruleKey])
+  @@map("withdrawal_risk_rules")
+}
+
+// ────────────────────────────────────────────────────────────────────────────────────────────────
+// Phase 13b — Internal Surveillance
+// ────────────────────────────────────────────────────────────────────────────────────────────────
+// Single-writer rule (advisor-locked): surveillance creates ALERTS only. It does NOT mutate
+// `ClientWinnerControl.rung` (Phase 9), `BonusGrant.status` (Phase 10), or any other live
+// state owned by another phase. An admin acting on an alert calls the *existing* mitigation
+// API in the owning module — that one writer remains the source of truth.
+//
+// DB-level dedupe (advisor-locked): every rule emits a deterministic `dedupeKey` (e.g.
+// `${userId}:${windowStartISO}` for HEAVY_HITTER). The unique index on
+// `[ruleKey, dedupeKey]` makes duplicate-suppression a constraint, not a runtime check.
+// Workers use `prisma.upsert` so the same evidence never produces a second alert.
+//
+// `LATENCY_ARB` is intentionally NOT seeded in 13b — it requires `Order.quoteTickAt` /
+// `Order.quoteSequenceId` which the hot-path Order model does not yet capture. Tracked as
+// 13b.5; do not back-fill in 13b.
+//
+// FK ownership recap (matches the Phase 13 banner above):
+//   relatedUserId        → User.id           (NoAction — keep audit, block purge while open)
+//   relatedWithdrawalId  → Withdrawal.id     (Cascade — alert dies with the queue row)
+//   relatedTransactionId → Transaction.id    (Cascade)
+//   relatedBonusGrantId  → BonusGrant.id     (Cascade)
+//   relatedAffiliateId   → Affiliate.id      (Cascade)
+//   assignedToId         → User.id           (SetNull — admin actor; alert survives offboarding)
+//   dismissedById        → User.id           (SetNull)
+// ────────────────────────────────────────────────────────────────────────────────────────────────
+
+enum SurveillanceSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum SurveillanceAlertStatus {
+  OPEN
+  ASSIGNED
+  INVESTIGATING
+  DISMISSED
+  RESOLVED
+  ESCALATED
+}
+
+/// Output of a surveillance rule firing. The worker writes one row per (ruleKey, dedupeKey);
+/// `@@unique([ruleKey, dedupeKey])` collapses duplicate evidence at the DB level.
+///
+/// `confidenceScore` (0–100) is the rule's self-assessment of how likely this is real fraud
+/// vs. noise. Used to auto-dismiss low-confidence alerts after `SURVEILLANCE_AUTO_DISMISS_DAYS`
+/// (env-driven, default 7) and to rank the queue. `severity` is the *operator-facing* tier
+/// (LOW/MEDIUM/HIGH/CRITICAL) — it does not change with confidence.
+///
+/// `evidence` is a free-form JSON snapshot the rule captured at fire-time. The worker never
+/// re-derives evidence from current state; the alert is always interpretable in isolation.
+model HouseSurveillanceAlert {
+  id String @id @default(uuid())
+
+  /// Stable rule identifier, e.g. "HEAVY_HITTER", "SUSPICIOUS_WINNER", "MULTI_ACCOUNT".
+  ruleKey   String @db.VarChar(64)
+  /// Deterministic per-rule key that collapses duplicate evidence. The composite unique
+  /// `(ruleKey, dedupeKey)` enforces idempotency — workers always `upsert`.
+  dedupeKey String @db.VarChar(255)
+
+  severity        SurveillanceSeverity    @default(MEDIUM)
+  /// 0–100 self-assessed confidence. Below `params.autoDismissBelow` (per rule) on the
+  /// SurveillanceRule will auto-dismiss after `SURVEILLANCE_AUTO_DISMISS_DAYS`.
+  confidenceScore Int                     @default(0)
+  status          SurveillanceAlertStatus @default(OPEN)
+
+  /// Subject user — the one the rule fired about. Required for every rule today.
+  relatedUserId String?
+  relatedUser   User?   @relation("SurveillanceAlertSubject", fields: [relatedUserId], references: [id], onDelete: NoAction)
+
+  /// Optional source artefacts the rule keyed off. Cascade-delete: closing the source
+  /// row sweeps the alert (we do not want orphan alerts referencing deleted withdrawals).
+  relatedWithdrawalId  String?
+  relatedWithdrawal    Withdrawal?  @relation("SurveillanceAlertWithdrawal", fields: [relatedWithdrawalId], references: [id], onDelete: Cascade)
+  relatedTransactionId String?
+  relatedTransaction   Transaction? @relation("SurveillanceAlertTransaction", fields: [relatedTransactionId], references: [id], onDelete: Cascade)
+  relatedBonusGrantId  String?
+  relatedBonusGrant    BonusGrant?  @relation("SurveillanceAlertBonusGrant", fields: [relatedBonusGrantId], references: [id], onDelete: Cascade)
+  relatedAffiliateId   String?
+  relatedAffiliate     Affiliate?   @relation("SurveillanceAlertAffiliate", fields: [relatedAffiliateId], references: [id], onDelete: Cascade)
+
+  /// Operator-facing one-liner. The worker writes this at fire-time; it must be self-contained.
+  message  String @db.Text
+  /// Rule-specific JSON snapshot at fire-time (counts, sums, deduped IPs, BonusGrant ids, etc.).
+  evidence Json   @default("{}")
+
+  /// Admin actor metadata — both nullable, both SetNull-on-delete. Alert outlives the admin.
+  assignedToId String?
+  assignedTo   User?     @relation("SurveillanceAlertAssignee", fields: [assignedToId], references: [id], onDelete: SetNull)
+  assignedAt   DateTime?
+
+  dismissedById String?
+  dismissedBy   User?     @relation("SurveillanceAlertDismisser", fields: [dismissedById], references: [id], onDelete: SetNull)
+  dismissedAt   DateTime?
+  dismissReason String?   @db.VarChar(255)
+
+  resolvedAt     DateTime?
+  resolutionNote String?   @db.Text
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  /// DB-level dedupe — the worker is `upsert`-driven; never two alerts for the same evidence.
+  @@unique([ruleKey, dedupeKey])
+  @@index([status, severity, createdAt])
+  @@index([relatedUserId, status])
+  @@index([assignedToId, status])
+  @@index([ruleKey, createdAt])
+  @@map("house_surveillance_alerts")
+}
+
+/// Admin-tunable registry mirroring `WithdrawalRiskRule`. The surveillance worker reads ACTIVE
+/// rules at start-of-batch (or per-event for event-driven rules) and snapshots `params` into
+/// the produced alert's `evidence` so admin re-tuning never rewrites past alerts.
+///
+/// Default seeded rules (created in `npm run db:seed:phase-13b` — separate seed):
+///   HEAVY_HITTER          MEDIUM, conf=70  — single user > params.dailyVolMultiplier × cohort median.
+///   SUSPICIOUS_WINNER     HIGH,   conf=80  — winner-control rung escalates AND withdrawal queued in <params.windowHours.
+///   COORDINATED_TRADING   HIGH,   conf=60  — N+ users on same instrument, same side, within Δt seconds (batch).
+///   MULTI_ACCOUNT         HIGH,   conf=75  — contact-cluster ≥ params.minClusterSize sharing IP/device/network (batch).
+///   BONUS_ABUSE           MEDIUM, conf=65  — BonusGrant turnover gates met but pattern matches wash-trade params (batch).
+model SurveillanceRule {
+  id          String  @id @default(uuid())
+  /// Stable machine key referenced in `HouseSurveillanceAlert.ruleKey`. Once seeded, never rename.
+  ruleKey     String  @unique @db.VarChar(64)
+  name        String  @db.VarChar(120)
+  description String? @db.Text
+
+  /// Default operator-facing severity for alerts emitted by this rule.
+  severity       SurveillanceSeverity @default(MEDIUM)
+  /// Default confidence the rule emits when evidence matches cleanly. Admin tuning override.
+  baseConfidence Int                  @default(50)
+
+  isActive Boolean @default(true)
+  /// Rule-specific tuning, e.g. `{ dailyVolMultiplier: 5 }`, `{ windowHours: 6 }`,
+  /// `{ minClusterSize: 3 }`, `{ autoDismissBelow: 40 }`.
+  params   Json    @default("{}")
+
+  createdById String?
+  createdBy   User?   @relation("SurveillanceRuleCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedById String?
+  updatedBy   User?   @relation("SurveillanceRuleUpdater", fields: [updatedById], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([isActive, ruleKey])
+  @@map("surveillance_rules")
+}
+
+/// Push notification device token registered by the mobile RN app (Expo Notifications).
+/// One user may have multiple devices (phone + tablet). Platform is "ios" | "android".
+/// Deregistered automatically when the Expo token expires or the user logs out.
+model PushDevice {
+  id            String   @id @default(uuid())
+  userId        String   @map("user_id")
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expoPushToken String   @map("expo_push_token") @db.VarChar(256)
+  platform      String   @db.VarChar(16) // "ios" | "android"
+  deviceId      String?  @map("device_id") @db.VarChar(256)
+  createdAt     DateTime @default(now()) @map("created_at")
+  lastSeenAt    DateTime @default(now()) @map("last_seen_at")
+
+  @@unique([userId, expoPushToken])
+  @@index([userId])
+  @@index([expoPushToken])
+  @@map("push_devices")
+}
+
+/// Admin-managed homepage configuration (ticker symbols, featured tokens, highlights, stats,
+/// platform download links, blog posts). Single-row table identified by key = "home_page_config".
+model HomePageConfig {
+  id             String   @id @default(cuid())
+  /// Singleton key — always "home_page_config"; enforced unique so upsert works cleanly.
+  key            String   @unique @default("home_page_config") @db.VarChar(64)
+  /// Ticker symbols shown in the homepage ticker tape, e.g. ["NSE:NIFTY", "NSE:BANKNIFTY"].
+  tickerSymbols  String[] @default([]) @map("ticker_symbols")
+  /// Featured tokens shown in the homepage hero / token listing section.
+  featuredTokens Json     @default("[]") @map("featured_tokens")
+  /// Highlight cards / announcements shown on the homepage.
+  highlights     Json     @default("[]")
+  /// Stats data (e.g. platform metrics, volume numbers).
+  statsData      Json     @default("[]") @map("stats_data")
+  /// App store / download links for iOS, Android, desktop, web.
+  platformLinks  Json     @default("[]") @map("platform_links")
+  /// Blog posts or news articles featured on the homepage.
+  blogPosts      Json     @default("[]") @map("blog_posts")
+  /// Last update timestamp — automatically managed by @updatedAt.
+  updatedAt      DateTime @updatedAt @map("updated_at")
+  /// Admin user who last updated this config.
+  updatedById    String?  @map("updated_by_id")
+  updatedBy      User?    @relation("HomePageConfigUpdater", fields: [updatedById], references: [id], onDelete: SetNull)
+
+  @@map("home_page_configs")
+}
